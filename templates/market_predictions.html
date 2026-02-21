@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Predictions - StockPulse AI</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="logo-text"><h1>StockPulse</h1><span class="logo-badge">AI</span></div>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-search">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
+                <kbd>Enter</kbd>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a></li>
+            <li class="nav-item"><a href="/analysis" class="nav-link"><i class="fas fa-chart-bar"></i><span>Technical Analysis</span></a></li>
+            <li class="nav-item"><a href="/predictions" class="nav-link"><i class="fas fa-brain"></i><span>ML Predictions</span></a></li>
+            <li class="nav-item active"><a href="/market-predictions" class="nav-link"><i class="fas fa-globe"></i><span>Market Predictions</span></a></li>
+            <li class="nav-item"><a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i><span>Compare Stocks</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">{{ current_user[0]|upper }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ current_user|capitalize }}</div>
+                    <div class="user-role">Analyst</div>
+                </div>
+            </div>
+            <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
+            <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h2 class="page-title"><i class="fas fa-globe" style="color:var(--accent-blue);margin-right:0.5rem;"></i>Market-Wide Predictions</h2>
+                <span class="page-subtitle" id="currentDate"></span>
+            </div>
+            <div class="topbar-right">
+                <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+            </div>
+        </header>
+
+        <!-- Step 1: Category / Stock Selection -->
+        <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom:1rem;font-size:1.1rem;"><i class="fas fa-list-check" style="color:var(--accent-blue);margin-right:0.5rem;"></i>Select Stocks to Predict</h3>
+            <div class="category-tabs" id="categoryTabs">
+                <!-- Populated by JS -->
+            </div>
+            <div class="selected-stocks-bar" id="selectedBar">
+                <div class="selected-stocks-list" id="selectedStocksList"></div>
+                <span class="selected-count" id="selectedCount">0 selected</span>
+            </div>
+            <div class="analysis-controls" style="margin-top:1rem;">
+                <div class="control-group">
+                    <label>Custom Symbols (comma separated)</label>
+                    <input type="text" id="customSymbols" class="form-input wide" placeholder="e.g., AAPL, TSLA, GOOG">
+                </div>
+                <div class="control-group">
+                    <label>Forecast Days</label>
+                    <select id="batchForecastDays" class="form-input">
+                        <option value="7">7 Days</option>
+                        <option value="14">14 Days</option>
+                        <option value="30" selected>30 Days</option>
+                        <option value="60">60 Days</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Mode</label>
+                    <select id="predictionMode" class="form-input">
+                        <option value="quick">Quick Scan (Fast - Technical)</option>
+                        <option value="ml" selected>ML Prediction (Detailed)</option>
+                    </select>
+                </div>
+                <button class="btn-primary" id="runBatchBtn">
+                    <i class="fas fa-rocket"></i> Run Predictions
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress / Loading -->
+        <div class="glass-card batch-loading" id="batchLoading" style="display:none;">
+            <div class="loading-content">
+                <div class="spinner large"></div>
+                <h3 id="batchLoadingTitle">Running ML Predictions...</h3>
+                <p id="batchLoadingSubtext">Analyzing stocks with multiple ML models. This may take a few minutes for large batches.</p>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="batchProgressBar">
+                        <div class="progress-fill" id="batchProgressFill" style="width:0%"></div>
+                    </div>
+                    <span class="progress-text" id="batchProgressText">0%</span>
+                </div>
+                <div id="batchCurrentStock" style="margin-top:0.75rem;color:var(--text-muted);font-size:0.85rem;"></div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="batchResults" style="display:none;">
+            <!-- Summary Dashboard -->
+            <div class="prediction-summary" id="predSummaryCards">
+                <div class="glass-card summary-stat">
+                    <div class="stat-icon green"><i class="fas fa-arrow-trend-up"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Strong Buy / Buy</span>
+                        <span class="stat-value" id="sumBuy">0</span>
+                    </div>
+                </div>
+                <div class="glass-card summary-stat">
+                    <div class="stat-icon orange"><i class="fas fa-minus"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Hold</span>
+                        <span class="stat-value" id="sumHold">0</span>
+                    </div>
+                </div>
+                <div class="glass-card summary-stat">
+                    <div class="stat-icon red"><i class="fas fa-arrow-trend-down"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Strong Sell / Sell</span>
+                        <span class="stat-value" id="sumSell">0</span>
+                    </div>
+                </div>
+                <div class="glass-card summary-stat">
+                    <div class="stat-icon blue"><i class="fas fa-chart-pie"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Analyzed</span>
+                        <span class="stat-value" id="sumTotal">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signal Distribution Chart -->
+            <div class="content-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1.5rem;">
+                <div class="glass-card">
+                    <div class="card-header"><h3><i class="fas fa-chart-pie"></i> Signal Distribution</h3></div>
+                    <div class="chart-container" style="height:280px;">
+                        <canvas id="signalPieChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <div class="card-header"><h3><i class="fas fa-chart-bar"></i> Predicted Returns (%)</h3></div>
+                    <div class="chart-container" style="height:280px;">
+                        <canvas id="returnsBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════
+                 FUTURE PRICE PREDICTIONS — single dedicated section
+                 ═══════════════════════════════════════════════════ -->
+            <div class="glass-card" id="futureForecastPanel" style="margin-bottom:1.5rem;display:none;">
+                <div class="card-header" style="flex-wrap:wrap;gap:0.75rem;">
+                    <h3 style="display:flex;align-items:center;gap:0.5rem;">
+                        <i class="fas fa-rocket" style="color:var(--accent-purple);"></i>
+                        Future Price Predictions
+                        <span class="ff-badge" id="ffDaysBadge">30 Days</span>
+                    </h3>
+                    <div style="display:flex;align-items:center;gap:0.75rem;margin-left:auto;flex-wrap:wrap;">
+                        <label style="font-size:0.82rem;color:var(--text-muted);">Select stock:</label>
+                        <select id="ffStockSelect" class="form-input"
+                                style="min-width:220px;padding:0.4rem 0.75rem;font-size:0.85rem;"
+                                onchange="selectForecastStock(this.value)"></select>
+                    </div>
+                </div>
+
+                <!-- Key target price cards -->
+                <div id="ffTargetsRow" style="display:flex;flex-wrap:wrap;gap:0.75rem;
+                     padding:0.75rem 0 1rem;border-bottom:1px solid rgba(148,163,184,0.1);">
+                    <div class="ff-target-card" style="flex:1;min-width:100px;">
+                        <span class="ff-target-label">Current</span>
+                        <span class="ff-target-value" id="ffCurrentPrice">--</span>
+                    </div>
+                    <div class="ff-target-card" style="flex:1;min-width:100px;">
+                        <span class="ff-target-label">7-Day Target</span>
+                        <span class="ff-target-value" id="ffTarget7d">--</span>
+                        <span class="ff-target-chg" id="ffChg7d"></span>
+                    </div>
+                    <div class="ff-target-card" style="flex:1;min-width:100px;">
+                        <span class="ff-target-label">14-Day Target</span>
+                        <span class="ff-target-value" id="ffTarget14d">--</span>
+                        <span class="ff-target-chg" id="ffChg14d"></span>
+                    </div>
+                    <div class="ff-target-card" style="flex:1;min-width:100px;">
+                        <span class="ff-target-label" id="ffEndLabel">30-Day Target</span>
+                        <span class="ff-target-value" id="ffTargetEnd">--</span>
+                        <span class="ff-target-chg" id="ffChgEnd"></span>
+                    </div>
+                    <div class="ff-target-card" style="flex:1;min-width:100px;">
+                        <span class="ff-target-label">Signal</span>
+                        <span class="ff-target-value" id="ffSignal">--</span>
+                    </div>
+                    <div class="ff-target-card" style="flex:1;min-width:100px;">
+                        <span class="ff-target-label">Best Model</span>
+                        <span class="ff-target-value" id="ffModel" style="font-size:0.78rem;">--</span>
+                    </div>
+                    <div class="ff-target-card" style="flex:1;min-width:100px;">
+                        <span class="ff-target-label">R² Score</span>
+                        <span class="ff-target-value" id="ffR2">--</span>
+                    </div>
+                </div>
+
+                <!-- Forecast chart — predicted price line + 90% CI band -->
+                <div class="chart-container" style="height:320px;margin:1rem 0;">
+                    <canvas id="ffChart"></canvas>
+                </div>
+
+                <!-- All-stocks overview grid -->
+                <div style="border-top:1px solid rgba(148,163,184,0.1);padding-top:1rem;margin-top:0.25rem;">
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">
+                        <i class="fas fa-th-large" style="margin-right:0.4rem;"></i>
+                        All stocks outlook — click any card to load its forecast above
+                    </p>
+                    <div class="ff-stock-cards" id="ffStockCards"></div>
+                </div>
+            </div>
+
+            <!-- Filter / Sort Controls -->
+            <div class="glass-card" style="padding:1rem 1.5rem;margin-bottom:1rem;">
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label>Filter by Signal:</label>
+                        <div class="filter-btns" id="filterBtns">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn buy" data-filter="buy">Buy</button>
+                            <button class="filter-btn hold" data-filter="hold">Hold</button>
+                            <button class="filter-btn sell" data-filter="sell">Sell</button>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label>Sort by:</label>
+                        <select id="sortBy" class="form-input" style="min-width:180px;">
+                            <option value="change_desc">Predicted Return (High→Low)</option>
+                            <option value="change_asc">Predicted Return (Low→High)</option>
+                            <option value="confidence">Confidence (High→Low)</option>
+                            <option value="symbol">Symbol (A→Z)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Toggle -->
+            <div class="view-toggle-bar" style="margin-bottom:1.25rem;">
+                <div class="view-toggle-group">
+                    <button class="view-toggle-btn active" id="btnBatchGraph" onclick="switchBatchView('graph')">
+                        <i class="fas fa-chart-area"></i> Graph View
+                    </button>
+                    <button class="view-toggle-btn" id="btnBatchText" onclick="switchBatchView('text')">
+                        <i class="fas fa-file-lines"></i> Text Report
+                    </button>
+                </div>
+                <span class="view-toggle-hint">Switch to Text Report if charts don't load</span>
+            </div>
+
+            <!-- GRAPH VIEW -->
+            <div id="batchGraphView">
+            <!-- Results Table -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-table"></i> All Predictions</h3>
+                    <span class="result-count" id="resultCount"></span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="batchTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Current Price</th>
+                                <th>Predicted Price</th>
+                                <th>Change</th>
+                                <th>Change (%)</th>
+                                <th>Signal</th>
+                                <th>R² Score</th>
+                                <th>Confidence</th>
+                                <th>Best Model</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            </div><!-- /batchGraphView -->
+
+            <!-- TEXT VIEW -->
+            <div id="batchTextView" style="display:none;">
+                <div class="glass-card" id="batchTextReport"></div>
+            </div>
+
+            <!-- No modal needed - forecast is inline in the panel above -->
+        </div>
+
+        <!-- Errors -->
+        <div class="glass-card" id="batchErrors" style="display:none;margin-top:1rem;">
+            <div class="card-header"><h3><i class="fas fa-exclamation-triangle" style="color:var(--accent-orange);"></i> Errors</h3></div>
+            <div id="errorList" class="error-list"></div>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/market_predictions.js"></script>
+</body>
+</html>
