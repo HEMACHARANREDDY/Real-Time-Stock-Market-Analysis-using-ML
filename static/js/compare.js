@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   StockPulse AI - Compare Stocks Page
+   Realtime S Pulse - Compare Stocks Page
    ═══════════════════════════════════════════════════════════ */
 
 let compareChart = null, absoluteChart = null;

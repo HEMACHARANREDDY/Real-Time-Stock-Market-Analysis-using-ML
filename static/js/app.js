@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   StockPulse AI - Core Application JavaScript
+   Realtime S Pulse - Core Application JavaScript
    ═══════════════════════════════════════════════════════════ */
 
 // ── Global State ──

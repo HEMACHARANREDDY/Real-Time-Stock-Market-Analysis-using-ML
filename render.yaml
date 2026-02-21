@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: stockpulse-ai
+    name: realtime-spulse
     env: python
     region: oregon
     plan: free

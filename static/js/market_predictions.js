@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   StockPulse AI - Market-Wide Predictions Page
+   Realtime S Pulse - Market-Wide Predictions Page
    Predict ALL stocks at once with ML models
    ═══════════════════════════════════════════════════════════ */
 

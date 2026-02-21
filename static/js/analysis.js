@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   StockPulse AI - Technical Analysis Page
+   Realtime S Pulse - Technical Analysis Page
    ═══════════════════════════════════════════════════════════ */
 
 let priceChart = null, macdChart = null, rsiChart = null, stochChart = null, volumeAnalysisChart = null;

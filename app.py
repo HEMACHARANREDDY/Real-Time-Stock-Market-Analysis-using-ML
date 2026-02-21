@@ -25,14 +25,14 @@ except ImportError:
 from ml_engine import StockMLEngine
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'stockpulse-ai-secret-2026-xK9mP3qR')
+app.secret_key = os.environ.get('SECRET_KEY', 'realtime-spulse-secret-2026-xK9mP3qR')
 CORS(app)
 
 # ─────────────────────────────────────────────
 # AUTH – Simple credentials store
 # ─────────────────────────────────────────────
 USERS = {
-    'admin': 'stockpulse123',
+    'admin': 'spulse123',
     'trader': 'market2026',
 }
 
@@ -855,7 +855,7 @@ def search_stocks(query):
 
 if __name__ == '__main__':
     print("\n" + "="*60)
-    print("  Stock Market Analytics with Machine Learning")
+    print("  Realtime S Pulse - Stock Market Analytics")
     print("  Open http://localhost:5000 in your browser")
     print("="*60 + "\n")
     port = int(os.environ.get('PORT', 5000))

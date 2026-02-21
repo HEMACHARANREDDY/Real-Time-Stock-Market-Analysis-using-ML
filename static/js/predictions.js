@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   StockPulse AI - ML Predictions Page
+   Realtime S Pulse - ML Predictions Page
    ═══════════════════════════════════════════════════════════ */
 
 let predictionChart = null, forecastChart = null, featureChart = null;
