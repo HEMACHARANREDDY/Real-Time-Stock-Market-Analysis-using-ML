@@ -145,7 +145,10 @@ def send_welcome_email(to_email: str, name: str):
         print(f'[EMAIL] Failed to send welcome email to {to_email}: {exc}')
 
 
-app = Flask(__name__)
+# Use explicit root path so Flask finds templates/static correctly on Vercel
+_root = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, template_folder=os.path.join(_root, 'templates'),
+            static_folder=os.path.join(_root, 'static'))
 app.secret_key = os.environ.get('SECRET_KEY', 'realtime-spulse-secret-2026-xK9mP3qR')
 CORS(app)
 
