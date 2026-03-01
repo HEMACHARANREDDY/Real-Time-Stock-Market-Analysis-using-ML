@@ -265,52 +265,58 @@ def logout():
 # ─────────────────────────────────────────────
 # GOOGLE OAUTH ROUTES
 # ─────────────────────────────────────────────
+def _get_redirect_uri():
+    """Return the OAuth redirect URI — env var takes priority over auto-detect."""
+    env_uri = os.environ.get('REDIRECT_URI', '').strip()
+    if env_uri:
+        return env_uri
+    # Auto-detect: force https on Render
+    uri = url_for('google_callback', _external=True)
+    if os.environ.get('RENDER'):
+        uri = uri.replace('http://', 'https://')
+    return uri
+
 @app.route('/auth/google')
 def google_login():
     if not os.environ.get('GOOGLE_CLIENT_ID'):
-        flash('Google login is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.', 'error')
+        flash('Google login is not configured.', 'error')
         return redirect(url_for('login'))
-    # Use explicit REDIRECT_URI from env if set, otherwise auto-detect
-    redirect_uri = os.environ.get('REDIRECT_URI') or url_for('google_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
+    return google.authorize_redirect(_get_redirect_uri())
 
 @app.route('/auth/google/callback')
 def google_callback():
     try:
-        redirect_uri = os.environ.get('REDIRECT_URI') or url_for('google_callback', _external=True)
         token = google.authorize_access_token()
         user_info = token.get('userinfo')
         if not user_info:
-            import urllib.request as _ur
-            import json as _json
+            import urllib.request as _ur, json as _json
             req = _ur.Request(
                 'https://www.googleapis.com/oauth2/v3/userinfo',
                 headers={'Authorization': f'Bearer {token["access_token"]}'}
             )
             user_info = _json.loads(_ur.urlopen(req).read())
 
-        email = user_info.get('email', '')
-        name  = user_info.get('name', email.split('@')[0])
-        # Use email prefix as username (safe slug)
+        email    = user_info.get('email', '')
+        name     = user_info.get('name', email.split('@')[0])
         username = email.split('@')[0].replace('.', '_').lower()
 
-        # Register google user in USERS dict if not present
         if email not in USERS:
-            USERS[email] = None  # password-less google user
+            USERS[email] = None
 
-        session['logged_in'] = True
-        session['username']  = username.lower()
-        session['email']     = email
-        session['avatar']    = user_info.get('picture', '')
-        session['auth_method'] = 'google'
-        session.permanent    = True
+        session.clear()
+        session['logged_in']    = True
+        session['username']     = username
+        session['email']        = email
+        session['avatar']       = user_info.get('picture', '')
+        session['auth_method']  = 'google'
+        session.permanent       = True
 
-        # Send welcome/thank-you email in background so login isn't delayed
         threading.Thread(target=send_welcome_email, args=(email, name), daemon=True).start()
 
         flash(f'Welcome, {name}!', 'success')
         return redirect(url_for('dashboard'))
     except Exception as e:
+        print(f'[OAUTH ERROR] {e}')
         flash(f'Google login failed: {str(e)}', 'error')
         return redirect(url_for('login'))
 
