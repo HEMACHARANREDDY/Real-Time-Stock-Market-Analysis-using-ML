@@ -173,7 +173,9 @@ USERS = {
 }
 
 SUBSCRIPTION_PRICE_INR = 25
-SUBSCRIPTIONS_FILE = os.path.join(os.path.dirname(__file__), 'data', 'subscriptions.json')
+# On Vercel the project filesystem is read-only; use /tmp for writes
+_data_dir = '/tmp' if os.environ.get('VERCEL') else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+SUBSCRIPTIONS_FILE = os.path.join(_data_dir, 'subscriptions.json')
 
 
 def _load_subscriptions():
