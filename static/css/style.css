@@ -2815,3 +2815,134 @@ select.form-input {
     .ff-stock-cards { grid-template-columns: 1fr 1fr; }
     .ff-targets-row { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE (≤ 768px)
+   ═══════════════════════════════════════════ */
+
+/* Mobile sidebar overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+}
+.sidebar-overlay.active { display: block; }
+
+/* Mobile hamburger button in topbar */
+.mobile-menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--transition-fast);
+}
+.mobile-menu-btn:hover { background: var(--bg-card-hover); }
+
+@media (max-width: 768px) {
+
+    /* ── Sidebar: hidden off-screen by default ── */
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1001;
+        width: 280px !important;
+    }
+    .sidebar.mobile-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 30px rgba(0,0,0,0.5);
+    }
+
+    /* ── Main content: full width ── */
+    .main-content {
+        margin-left: 0 !important;
+        max-width: 100vw !important;
+        padding: 0 1rem 2rem;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+        padding: 0.9rem 0;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
+    .mobile-menu-btn { display: flex; }
+    .page-title { font-size: 1.15rem; }
+    .page-subtitle { font-size: 0.78rem; }
+    .topbar-right { width: 100%; justify-content: space-between; }
+    .topbar-actions { gap: 0.4rem; }
+    .btn-subscribe-topbar { padding: 0.45rem 0.8rem; font-size: 0.78rem; }
+    #currentDate { font-size: 0.78rem; }
+
+    /* ── Dashboard stats grid ── */
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.75rem; }
+    .stat-card { padding: 1rem; }
+    .stat-value { font-size: 1.4rem; }
+
+    /* ── Cards & content ── */
+    .dashboard-grid { grid-template-columns: 1fr !important; }
+    .chart-row { grid-template-columns: 1fr !important; }
+    .card { padding: 1rem; }
+    .card-header { flex-wrap: wrap; gap: 0.5rem; }
+
+    /* ── Compare page ── */
+    .compare-grid { grid-template-columns: 1fr !important; }
+    .vs-divider { display: none; }
+
+    /* ── Analysis page ── */
+    .analysis-grid { grid-template-columns: 1fr !important; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .indicator-grid { grid-template-columns: 1fr !important; }
+
+    /* ── Predictions page ── */
+    .predict-layout { grid-template-columns: 1fr !important; }
+    .prediction-summary { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* ── Market predictions ── */
+    .market-grid { grid-template-columns: 1fr !important; }
+    .ff-stock-cards { grid-template-columns: 1fr !important; }
+
+    /* ── Modal ── */
+    .modal-content { width: 96% !important; padding: 1rem; max-height: 90vh; overflow-y: auto; }
+    .modal-metric-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* ── Subscription & login pages ── */
+    .subscribe-container { padding: 1rem; }
+    .plan-cards { grid-template-columns: 1fr !important; }
+    .login-wrapper { flex-direction: column; }
+    .login-card { width: 95% !important; max-width: 420px; }
+
+    /* ── Tables ── */
+    .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 480px; }
+
+    /* ── Category tabs scrollable ── */
+    .category-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+    .category-tabs::-webkit-scrollbar { height: 3px; }
+
+    /* ── Buttons ── */
+    .btn { padding: 0.5rem 0.9rem; font-size: 0.85rem; }
+    .input-group { flex-direction: column; gap: 0.5rem; }
+    .input-group .btn { width: 100%; }
+}
+
+/* ── Tablet (769–1024px): sidebar narrower ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+    :root {
+        --sidebar-width: 220px;
+    }
+    .main-content { padding: 0 1.25rem 2rem; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .logo-text h1 { font-size: 1rem; }
+}

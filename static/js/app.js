@@ -99,14 +99,73 @@ function updateThemeIcon(theme) {
 
 // ── Sidebar Toggle ──
 function initSidebar() {
-    const toggle = document.getElementById('sidebarToggle');
+    const sidebar  = document.getElementById('sidebar');
+    const toggle   = document.getElementById('sidebarToggle');
+    const mainContent = document.querySelector('.main-content');
+
+    // --- Desktop collapse (existing behaviour) ---
     if (toggle) {
         toggle.addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('collapsed');
-            document.querySelector('.main-content').classList.toggle('expanded');
+            if (window.innerWidth > 768) {
+                sidebar.classList.toggle('collapsed');
+                if (mainContent) mainContent.classList.toggle('expanded');
+            } else {
+                openMobileSidebar();
+            }
+        });
+    }
+
+    // --- Inject overlay element once ---
+    if (!document.getElementById('sidebarOverlay')) {
+        const overlay = document.createElement('div');
+        overlay.id = 'sidebarOverlay';
+        overlay.className = 'sidebar-overlay';
+        overlay.addEventListener('click', closeMobileSidebar);
+        document.body.appendChild(overlay);
+    }
+
+    // --- Inject mobile hamburger button into topbar-left ---
+    const topbarLeft = document.querySelector('.topbar-left');
+    if (topbarLeft && !document.getElementById('mobileMenuBtn')) {
+        const mobileBtn = document.createElement('button');
+        mobileBtn.id = 'mobileMenuBtn';
+        mobileBtn.className = 'mobile-menu-btn';
+        mobileBtn.setAttribute('aria-label', 'Open menu');
+        mobileBtn.innerHTML = '<i class="fas fa-bars"></i>';
+        mobileBtn.addEventListener('click', openMobileSidebar);
+        topbarLeft.insertBefore(mobileBtn, topbarLeft.firstChild);
+    }
+
+    // Close sidebar on nav link click (mobile)
+    if (sidebar) {
+        sidebar.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) closeMobileSidebar();
+            });
         });
     }
 }
+
+function openMobileSidebar() {
+    const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('sidebarOverlay');
+    if (sidebar)  sidebar.classList.add('mobile-open');
+    if (overlay)  overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMobileSidebar() {
+    const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('sidebarOverlay');
+    if (sidebar)  sidebar.classList.remove('mobile-open');
+    if (overlay)  overlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Close sidebar on window resize to desktop
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) closeMobileSidebar();
+});
 
 
 // ── Date Display ──
