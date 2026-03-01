@@ -173,8 +173,9 @@ USERS = {
 }
 
 SUBSCRIPTION_PRICE_INR = 25
-# On Vercel the project filesystem is read-only; use /tmp for writes
-_data_dir = '/tmp' if os.environ.get('VERCEL') else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+# On serverless/read-only filesystems use /tmp, otherwise use local data/
+_is_readonly = os.environ.get('VERCEL') or os.environ.get('RENDER')
+_data_dir = '/tmp' if _is_readonly else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 SUBSCRIPTIONS_FILE = os.path.join(_data_dir, 'subscriptions.json')
 
 
