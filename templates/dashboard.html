@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <title>Realtime S Pulse - Real-Time Market Analytics</title>
+    <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -74,10 +76,10 @@
 
         <div class="sidebar-footer">
             <div class="user-info">
-                <div class="user-avatar" id="userAvatar">{{ current_user[0]|upper }}</div>
+                <div class="user-avatar" id="userAvatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
                 <div class="user-details">
-                    <div class="user-name" id="sidebarUsername">{{ current_user|capitalize }}</div>
-                    <div class="user-role">Analyst</div>
+                    <div class="user-name" id="sidebarUsername">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
+                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
                 </div>
             </div>
             <div class="market-status" id="marketStatus">
@@ -99,6 +101,11 @@
                 <span class="page-subtitle" id="currentDate"></span>
             </div>
             <div class="topbar-right">
+                {% if not is_subscribed %}
+                <a href="/subscribe" class="btn-subscribe-topbar">
+                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                </a>
+                {% endif %}
                 <div class="topbar-actions">
                     <button class="btn-icon" id="refreshBtn" title="Refresh Data">
                         <i class="fas fa-sync-alt"></i>

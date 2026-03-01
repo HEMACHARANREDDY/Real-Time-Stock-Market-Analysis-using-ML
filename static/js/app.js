@@ -112,11 +112,74 @@ function initSidebar() {
 // ── Date Display ──
 function setCurrentDate() {
     const el = document.getElementById('currentDate');
-    if (el) {
-        el.textContent = new Date().toLocaleDateString('en-US', {
+    if (!el) return;
+    function tick() {
+        const now = new Date();
+        const date = now.toLocaleDateString('en-US', {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
+        const time = now.toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+        });
+        el.textContent = `${date} · ${time}`;
     }
+    tick();
+    setInterval(tick, 1000);
+}
+
+// ── Market Status (NYSE hours: Mon–Fri 9:30–16:00 ET) ──
+function updateMarketStatus() {
+    const now = new Date();
+
+    // Get current date/time parts in Eastern Time
+    const etParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+    }).formatToParts(now);
+
+    const get = (type) => etParts.find(p => p.type === type)?.value || '';
+    const dayStr   = get('weekday');          // 'Mon', 'Tue', …
+    const hour     = parseInt(get('hour'));    // 0–23
+    const minute   = parseInt(get('minute')); // 0–59
+    const year     = get('year');
+    const month    = get('month');
+    const day      = get('day');
+    const dateStr  = `${year}-${month}-${day}`; // 'YYYY-MM-DD'
+
+    // Weekend check
+    const isWeekend = dayStr === 'Sat' || dayStr === 'Sun';
+
+    // NYSE time window in minutes
+    const timeMin   = hour * 60 + minute;
+    const openMin   = 9 * 60 + 30;   // 09:30
+    const closeMin  = 16 * 60;       // 16:00
+    const inHours   = timeMin >= openMin && timeMin < closeMin;
+
+    // NYSE holidays (add/update as needed)
+    const holidays = new Set([
+        '2026-01-01','2026-01-19','2026-02-16','2026-04-03',
+        '2026-05-25','2026-07-03','2026-09-07','2026-11-26',
+        '2026-11-27','2026-12-25',
+        '2025-01-01','2025-01-20','2025-02-17','2025-04-18',
+        '2025-05-26','2025-07-04','2025-09-01','2025-11-27',
+        '2025-11-28','2025-12-25',
+    ]);
+    const isHoliday = holidays.has(dateStr);
+
+    const marketIsOpen = !isWeekend && !isHoliday && inHours;
+
+    document.querySelectorAll('.market-status').forEach(el => {
+        const dot   = el.querySelector('.status-dot');
+        const label = el.querySelector('span');
+        if (dot)   dot.className   = marketIsOpen ? 'status-dot' : 'status-dot closed';
+        if (label) label.textContent = marketIsOpen ? 'Market Open' : 'Market Closed';
+    });
 }
 
 
@@ -148,7 +211,9 @@ function initCommon() {
     initSidebar();
     setCurrentDate();
     initSearch();
-    
+    updateMarketStatus();
+    setInterval(updateMarketStatus, 60000); // refresh every minute
+
     const themeBtn = document.getElementById('themeToggle');
     if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
 }

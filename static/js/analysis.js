@@ -388,6 +388,59 @@ function switchAnalysisView(view) {
     document.getElementById('analysisTextView').style.display = isGraph ? 'none' : '';
     document.getElementById('btnAnalysisGraph').classList.toggle('active', isGraph);
     document.getElementById('btnAnalysisText').classList.toggle('active', !isGraph);
+
+    const hint = document.getElementById('analysisViewHint');
+
+    if (!isGraph) {
+        const btn = document.getElementById('btnAnalysisText');
+        const subscribed = btn && btn.dataset.subscribed === 'true';
+
+        if (!subscribed) {
+            if (hint) hint.textContent = 'Subscribe for ₹25 to unlock Text Reports';
+            // Build fake blurred report lines for background
+            const fakeLines = Array.from({length: 18}, (_, i) => {
+                const w = [60, 85, 72, 90, 55, 78, 68, 95, 50, 80][i % 10];
+                return `<div style="height:12px;border-radius:4px;background:rgba(148,163,184,.25);margin-bottom:10px;width:${w}%"></div>`;
+            }).join('');
+
+            document.getElementById('analysisTextReport').innerHTML = `
+                <div class="blur-gate-wrap">
+                    <div class="blur-gate-bg">
+                        <div style="height:28px;border-radius:6px;background:rgba(148,163,184,.3);width:55%;margin-bottom:20px"></div>
+                        ${fakeLines}
+                    </div>
+                    <div class="blur-gate-overlay">
+                        <div class="gate-icon"><i class="fas fa-lock"></i></div>
+                        <h3>Premium Feature</h3>
+                        <p>The <strong>Text Report</strong> is available to subscribers only.<br>Unlock it with a one-time payment.</p>
+                        <div class="blur-gate-price">₹25<small>one-time &middot; lifetime access</small></div>
+                        <ul class="blur-gate-features">
+                            <li>Full technical analysis text report</li>
+                            <li>Signal breakdown for all indicators</li>
+                            <li>Overall buy/sell verdict with score</li>
+                            <li>All future premium features</li>
+                        </ul>
+                        <div class="gate-actions-row">
+                            <a href="/subscribe" class="btn-gate-subscribe">
+                                <i class="fas fa-crown"></i> Subscribe for ₹25
+                            </a>
+                            <button class="btn-gate-back" onclick="switchAnalysisView('graph')">
+                                <i class="fas fa-chart-area"></i> Back to Graph
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        } else {
+            if (hint) hint.textContent = 'Switch back to interactive charts';
+            // Re-render with real data if available
+            if (lastAnalysisData) {
+                renderAnalysisTextReport(lastAnalysisData.signals,
+                    document.getElementById('analysisSymbol').value.trim().toUpperCase() || 'Stock');
+            }
+        }
+    } else {
+        if (hint) hint.textContent = "Switch to Text Report if charts don't load";
+    }
 }
 
 /* ── Text Report ─────────────────────────────────────────── */
@@ -473,7 +526,6 @@ function renderAnalysisTextReport(signals, symbol) {
     </div>`;
 
     document.getElementById('analysisTextReport').innerHTML = html;
-}
 }
 
 window.runAnalysis = runAnalysis;

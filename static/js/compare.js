@@ -13,13 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initSuggestions();
 
     document.getElementById('compareBtn').addEventListener('click', runComparison);
+
+    // Pre-load 2 default stocks so users can click Compare immediately
+    ['AAPL', 'MSFT'].forEach(s => addTag(s));
 });
 
 /* ── Tag Input ─────────────────────────────────────────── */
 function initTagInput() {
-    // Pre-load default tags
-    ['AAPL', 'MSFT', 'GOOGL'].forEach(addTag);
-
     const typing = document.getElementById('tagTyping');
     const wrapper = document.getElementById('tagInputWrapper');
 
@@ -27,19 +27,33 @@ function initTagInput() {
     wrapper.addEventListener('click', () => typing.focus());
 
     typing.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ',') {
+        if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
             e.preventDefault();
-            const val = typing.value.trim().replace(/,/g, '').toUpperCase();
-            if (val) { addTag(val); typing.value = ''; }
+            // Support comma/space-separated paste e.g. "AAPL MSFT" or "AAPL,MSFT"
+            typing.value.split(/[,\s]+/).map(s => s.trim()).filter(Boolean).forEach(s => addTag(s));
+            typing.value = '';
         } else if (e.key === 'Backspace' && typing.value === '' && taggedSymbols.length) {
             removeTag(taggedSymbols[taggedSymbols.length - 1]);
+        }
+    });
+
+    // Also add on blur so symbols typed but not confirmed still get picked up
+    typing.addEventListener('blur', () => {
+        const val = typing.value.trim();
+        if (val) {
+            val.split(/[,\s]+/).map(s => s.trim()).filter(Boolean).forEach(s => addTag(s));
+            typing.value = '';
         }
     });
 }
 
 function addTag(sym) {
     sym = sym.toUpperCase();
-    if (!sym || taggedSymbols.includes(sym) || taggedSymbols.length >= 5) return;
+    if (!sym || taggedSymbols.includes(sym)) return;
+    if (taggedSymbols.length >= 5) {
+        showToast('Maximum 5 stocks allowed. Remove one to add another.', 'error');
+        return;
+    }
     taggedSymbols.push(sym);
     renderTags();
     syncHidden();
@@ -61,6 +75,15 @@ function renderTags() {
             <button class="tag-remove" onclick="removeTag('${sym}')" title="Remove">&times;</button>
         </span>
     `).join('');
+
+    // Show/hide count badge
+    const counter = document.getElementById('tagCounter');
+    if (counter) {
+        counter.textContent = taggedSymbols.length > 0
+            ? taggedSymbols.length + ' selected (need at least 2 to compare)'
+            : 'No stocks selected — click chips below or type above';
+        counter.style.color = taggedSymbols.length >= 2 ? 'var(--accent-green)' : 'var(--text-muted)';
+    }
 }
 
 function syncHidden() {
@@ -94,10 +117,10 @@ function updateSuggestionChips() {
 }
 
 async function runComparison() {
-    // Also grab anything typed but not yet confirmed
+    // Grab anything typed but not yet confirmed (supports "AAPL MSFT" or "AAPL,MSFT")
     const typing = document.getElementById('tagTyping');
     if (typing && typing.value.trim()) {
-        addTag(typing.value.trim());
+        typing.value.split(/[,\s]+/).map(s => s.trim()).filter(Boolean).forEach(s => addTag(s));
         typing.value = '';
     }
 
@@ -105,7 +128,7 @@ async function runComparison() {
     const period = document.getElementById('comparePeriod').value;
 
     if (symbols.length < 2) {
-        showToast('Enter at least 2 symbols to compare', 'error');
+        showToast('⚠️ Select at least 2 stocks — click the Quick Add chips below or type symbols and press Enter', 'error');
         return;
     }
     
@@ -117,6 +140,13 @@ async function runComparison() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ symbols, period })
         });
+
+        // If not JSON (e.g. session expired → redirect to login page)
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            showToast('Session expired — please refresh and log in again.', 'error');
+            return;
+        }
         
         const data = await res.json();
         
@@ -124,13 +154,21 @@ async function runComparison() {
             showToast(data.error, 'error');
             return;
         }
+
+        if (Object.keys(data).length === 0) {
+            showToast('No data returned — check the stock symbols and try again.', 'error');
+            return;
+        }
         
         document.getElementById('compareResults').style.display = 'block';
+        document.getElementById('viewToggleBar').style.display = '';
         lastCompareData = data;
         renderComparisonResults(data);
         renderTextReport(data);
         switchView(currentView);
-        showToast('Comparison complete', 'success');
+        showToast('Comparison complete ✓', 'success');
+        // Scroll results into view
+        document.getElementById('viewToggleBar').scrollIntoView({ behavior: 'smooth', block: 'start' });
         
     } catch (err) {
         showToast('Comparison failed: ' + err.message, 'error');
@@ -139,6 +177,7 @@ async function runComparison() {
 
 function renderComparisonResults(data) {
     const symbols = Object.keys(data);
+    if (!symbols.length) return;
     
     // Summary cards
     const summary = document.getElementById('compareSummary');
@@ -204,15 +243,6 @@ function renderNormalizedChart(data, symbols) {
                     borderWidth: 1,
                     padding: 12,
                     callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y >= 0 ? '+' : ''}${ctx.parsed.y.toFixed(2)}%` }
-                },
-                annotation: {
-                    annotations: {
-                        zeroline: {
-                            type: 'line', yMin: 0, yMax: 0,
-                            borderColor: 'rgba(148, 163, 184, 0.3)',
-                            borderWidth: 1, borderDash: [6, 6],
-                        }
-                    }
                 }
             },
             scales: {
@@ -298,9 +328,10 @@ function switchView(view) {
     document.getElementById('btnGraphView').classList.toggle('active', isGraph);
     document.getElementById('btnTextView').classList.toggle('active', !isGraph);
     document.getElementById('viewToggleHint').textContent = isGraph
-        ? 'Switch to Text Report if graphs don\'t load'
+        ? "Switch to Text Report if graphs don't load"
         : 'Switch back to interactive charts';
 }
+
 
 /* ── Text Report ───────────────────────────────────── */
 function renderTextReport(data) {
@@ -413,11 +444,62 @@ function renderTextReport(data) {
                 <li>📉 <strong>Worst Performer:</strong> ${worst} &mdash; ${sign(data[worst].total_return)}${data[worst].total_return}% return</li>
                 <li>🛡️ <strong>Most Stable:</strong> ${leastVolatile} &mdash; ${data[leastVolatile].volatility}% volatility</li>
                 <li>⚡ <strong>Most Volatile:</strong> ${mostVolatile} &mdash; ${data[mostVolatile].volatility}% volatility</li>
-                <li>💰 <strong>Highest Price:</strong> ${symbols.sort((a,b) => data[b].end_price - data[a].end_price)[0]} &mdash; ${formatPrice(data[symbols[0]].end_price)}</li>
+                <li>💰 <strong>Highest Price:</strong> ${[...symbols].sort((a,b) => data[b].end_price - data[a].end_price)[0]} &mdash; ${formatPrice(data[[...symbols].sort((a,b) => data[b].end_price - data[a].end_price)[0]].end_price)}</li>
                 <li>📈 <strong>Return Spread:</strong> ${spreadReturn}% gap between best and worst</li>
             </ul>
         </div>
     </div>`;
 
     document.getElementById('textReportCard').innerHTML = html;
+}
+
+/* ── Download Text Report ──────────────────────────────── */
+function downloadTextReport() {
+    // Switch to text view first so the report is rendered
+    switchView('text');
+
+    setTimeout(() => {
+        const card = document.getElementById('textReportCard');
+        if (!card || !card.innerText.trim()) {
+            if (typeof showToast === 'function') showToast('Run a comparison first to generate a report.', 'error');
+            return;
+        }
+
+        // Build plain-text version
+        const lines = [];
+        lines.push('='.repeat(60));
+        lines.push('  REALTIME S PULSE — STOCK COMPARISON REPORT');
+        lines.push('='.repeat(60));
+        lines.push('Generated: ' + new Date().toLocaleString());
+        lines.push('');
+
+        // Walk DOM for readable text
+        card.querySelectorAll('.tr-section').forEach(sec => {
+            const title = sec.querySelector('.tr-section-title');
+            if (title) { lines.push(''); lines.push('── ' + title.innerText.toUpperCase() + ' ──'); lines.push(''); }
+            sec.querySelectorAll('.tr-metric').forEach(m => {
+                const lbl = m.querySelector('.tr-metric-label');
+                const val = m.querySelector('.tr-metric-value');
+                if (lbl && val) lines.push('  ' + lbl.innerText.padEnd(22) + val.innerText);
+            });
+            sec.querySelectorAll('.tr-highlights li').forEach(li => {
+                lines.push('  ' + li.innerText);
+            });
+            sec.querySelectorAll('.tr-stock-block').forEach(blk => lines.push(blk.innerText.trim()));
+        });
+
+        lines.push('');
+        lines.push('='.repeat(60));
+        lines.push('  Powered by Realtime S Pulse — Premium');
+        lines.push('='.repeat(60));
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'SPulse_CompareReport_' + new Date().toISOString().slice(0,10) + '.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+        if (typeof showToast === 'function') showToast('Report downloaded!', 'success');
+    }, 300);
 }

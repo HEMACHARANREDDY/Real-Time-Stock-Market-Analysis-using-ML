@@ -12,8 +12,14 @@ import numpy as np
 from datetime import datetime, timedelta
 import json
 import os
+import threading
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import warnings
 warnings.filterwarnings('ignore')
+
+from authlib.integrations.flask_client import OAuth
 
 # Load .env file if present (local development only)
 try:
@@ -24,9 +30,136 @@ except ImportError:
 
 from ml_engine import StockMLEngine
 
+# ─────────────────────────────────────────────
+# WELCOME EMAIL
+# ─────────────────────────────────────────────
+def send_welcome_email(to_email: str, name: str):
+    """Send a thank-you welcome email to a user who just signed in via Google."""
+    smtp_host   = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+    smtp_port   = int(os.environ.get('SMTP_PORT', 587))
+    smtp_user   = os.environ.get('SMTP_USER', '')
+    smtp_pass   = os.environ.get('SMTP_PASS', '')
+
+    if not smtp_user or not smtp_pass:
+        # SMTP not configured – skip silently
+        return
+
+    first_name = name.split()[0] if name else 'there'
+
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Welcome to Realtime S Pulse</title>
+    </head>
+    <body style="margin:0;padding:0;background:#0a0e17;font-family:'Segoe UI',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0e17;padding:40px 0;">
+        <tr><td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#1a1f2e;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+
+            <!-- Header -->
+            <tr>
+              <td style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);padding:40px 48px;text-align:center;">
+                <div style="display:inline-flex;align-items:center;gap:10px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="40" height="40" fill="none">
+                    <path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    <polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+                  </svg>
+                  <span style="color:#fff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">S Pulse</span>
+                  <span style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:1px;">AI</span>
+                </div>
+                <p style="color:rgba(255,255,255,0.8);margin:14px 0 0;font-size:14px;letter-spacing:0.5px;">Realtime Stock Market Analytics</p>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:48px 48px 32px;">
+                <h1 style="margin:0 0 8px;color:#f1f5f9;font-size:26px;font-weight:700;">Hey {first_name}, welcome! &#127881;</h1>
+                <p style="margin:0 0 24px;color:#94a3b8;font-size:15px;line-height:1.6;">
+                  Thank you for choosing <strong style="color:#3b82f6;">Realtime S Pulse</strong> &mdash; your AI-powered stock market analytics platform.
+                  We&rsquo;re thrilled to have you on board.
+                </p>
+
+                <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:24px 28px;margin-bottom:28px;">
+                  <p style="margin:0 0 14px;color:#f1f5f9;font-weight:600;font-size:15px;">&#10024; What you can do now:</p>
+                  <ul style="margin:0;padding-left:20px;color:#94a3b8;font-size:14px;line-height:2;">
+                    <li>&#128200; &nbsp;Real-time stock prices &amp; live charts</li>
+                    <li>&#129504; &nbsp;AI-powered predictions &amp; market signals</li>
+                    <li>&#128293; &nbsp;Compare multiple stocks side-by-side</li>
+                    <li>&#127758; &nbsp;Global market overview &amp; indices</li>
+                    <li>&#128274; &nbsp;Upgrade to PRO for advanced analytics</li>
+                  </ul>
+                </div>
+
+                <table cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                  <tr>
+                    <td style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:10px;padding:1px;">
+                      <a href="https://spulse.onrender.com/" style="display:inline-block;background:#1a1f2e;color:#3b82f6;text-decoration:none;font-weight:700;font-size:15px;padding:14px 36px;border-radius:9px;transition:background 0.2s;">
+                        &#128640; &nbsp;Go to Dashboard
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:0;color:#64748b;font-size:13px;line-height:1.7;">
+                  If you have any questions, reply to this email or reach out to our support team.<br>
+                  We&rsquo;re always here to help you make smarter investment decisions.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#0f1523;padding:24px 48px;border-top:1px solid rgba(148,163,184,0.08);">
+                <p style="margin:0;color:#475569;font-size:12px;text-align:center;line-height:1.8;">
+                  &copy; 2026 Realtime S Pulse &bull; AI Stock Analytics<br>
+                  You&rsquo;re receiving this because you signed in with your Google account.<br>
+                  <span style="color:#374151;">Data powered by Yahoo Finance</span>
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+    """
+
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = '🎉 Welcome to Realtime S Pulse — Your AI Stock Platform'
+        msg['From']    = f'Realtime S Pulse <{smtp_user}>'
+        msg['To']      = to_email
+        msg.attach(MIMEText(html, 'html'))
+
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_user, to_email, msg.as_string())
+    except Exception as exc:
+        print(f'[EMAIL] Failed to send welcome email to {to_email}: {exc}')
+
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'realtime-spulse-secret-2026-xK9mP3qR')
 CORS(app)
+
+# ─────────────────────────────────────────────
+# GOOGLE OAUTH SETUP
+# ─────────────────────────────────────────────
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID', ''),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'},
+)
 
 # ─────────────────────────────────────────────
 # AUTH – Simple credentials store
@@ -35,6 +168,32 @@ USERS = {
     'admin': 'spulse123',
     'trader': 'market2026',
 }
+
+SUBSCRIPTION_PRICE_INR = 25
+SUBSCRIPTIONS_FILE = os.path.join(os.path.dirname(__file__), 'data', 'subscriptions.json')
+
+
+def _load_subscriptions():
+    """Load subscribed users and pending requests from JSON file."""
+    if os.path.exists(SUBSCRIPTIONS_FILE):
+        try:
+            with open(SUBSCRIPTIONS_FILE) as f:
+                data = json.load(f)
+            return set(data.get('subscribed', ['admin'])), data.get('pending', [])
+        except Exception:
+            pass
+    return {'admin'}, []
+
+
+def _save_subscriptions():
+    """Persist subscribed users and pending requests to JSON file."""
+    os.makedirs(os.path.dirname(SUBSCRIPTIONS_FILE), exist_ok=True)
+    with open(SUBSCRIPTIONS_FILE, 'w') as f:
+        json.dump({'subscribed': list(SUBSCRIBED_USERS), 'pending': PENDING_REQUESTS}, f, indent=2)
+
+
+# Users who have purchased a subscription (Text Report & future premium features)
+SUBSCRIBED_USERS, PENDING_REQUESTS = _load_subscriptions()
 
 def login_required(f):
     @wraps(f)
@@ -47,9 +206,11 @@ def login_required(f):
 
 @app.context_processor
 def inject_user():
+    username = session.get('username', '').lower()
     return {
-        'current_user': session.get('username', 'Guest'),
+        'current_user': username or 'Guest',
         'logged_in': session.get('logged_in', False),
+        'is_subscribed': username in SUBSCRIBED_USERS,
     }
 
 # Initialize ML Engine
@@ -68,7 +229,7 @@ def login():
         password = request.form.get('password', '')
         if username in USERS and USERS[username] == password:
             session['logged_in'] = True
-            session['username'] = username
+            session['username'] = username.lower()
             session.permanent = bool(request.form.get('remember'))
             flash(f'Welcome back, {username}!', 'success')
             return redirect(url_for('dashboard'))
@@ -81,6 +242,58 @@ def logout():
     session.clear()
     flash('You have been signed out successfully.', 'success')
     return redirect(url_for('login'))
+
+# ─────────────────────────────────────────────
+# GOOGLE OAUTH ROUTES
+# ─────────────────────────────────────────────
+@app.route('/auth/google')
+def google_login():
+    if not os.environ.get('GOOGLE_CLIENT_ID'):
+        flash('Google login is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.', 'error')
+        return redirect(url_for('login'))
+    # Use explicit REDIRECT_URI from env if set, otherwise auto-detect
+    redirect_uri = os.environ.get('REDIRECT_URI') or url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def google_callback():
+    try:
+        redirect_uri = os.environ.get('REDIRECT_URI') or url_for('google_callback', _external=True)
+        token = google.authorize_access_token()
+        user_info = token.get('userinfo')
+        if not user_info:
+            import urllib.request as _ur
+            import json as _json
+            req = _ur.Request(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                headers={'Authorization': f'Bearer {token["access_token"]}'}
+            )
+            user_info = _json.loads(_ur.urlopen(req).read())
+
+        email = user_info.get('email', '')
+        name  = user_info.get('name', email.split('@')[0])
+        # Use email prefix as username (safe slug)
+        username = email.split('@')[0].replace('.', '_').lower()
+
+        # Register google user in USERS dict if not present
+        if email not in USERS:
+            USERS[email] = None  # password-less google user
+
+        session['logged_in'] = True
+        session['username']  = username.lower()
+        session['email']     = email
+        session['avatar']    = user_info.get('picture', '')
+        session['auth_method'] = 'google'
+        session.permanent    = True
+
+        # Send welcome/thank-you email in background so login isn't delayed
+        threading.Thread(target=send_welcome_email, args=(email, name), daemon=True).start()
+
+        flash(f'Welcome, {name}!', 'success')
+        return redirect(url_for('dashboard'))
+    except Exception as e:
+        flash(f'Google login failed: {str(e)}', 'error')
+        return redirect(url_for('login'))
 
 # ─────────────────────────────────────────────
 # PAGE ROUTES  (all protected)
@@ -110,6 +323,83 @@ def compare():
 @login_required
 def market_predictions():
     return render_template('market_predictions.html')
+
+
+# ─────────────────────────────────────────────
+# SUBSCRIPTION ROUTES
+# ─────────────────────────────────────────────
+
+@app.route('/subscribe', methods=['GET', 'POST'])
+@login_required
+def subscribe():
+    username = session.get('username', '').lower()
+
+    # Don't redirect — show premium dashboard instead
+    if username in SUBSCRIBED_USERS:
+        return render_template('subscribe.html', pending=False,
+                               price=SUBSCRIPTION_PRICE_INR, already_subscribed=True)
+
+    already_pending = any(p['username'] == username for p in PENDING_REQUESTS)
+
+    if request.method == 'POST':
+        txn_id = request.form.get('txn_id', '').strip()
+        if not txn_id:
+            flash('Please enter a valid UPI Transaction ID.', 'error')
+        elif already_pending:
+            flash('Your payment request is already under review. Please wait for admin approval.', 'info')
+        else:
+            PENDING_REQUESTS.append({
+                'username': username,
+                'txn_id': txn_id,
+                'amount': SUBSCRIPTION_PRICE_INR,
+                'submitted_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'status': 'pending',
+            })
+            _save_subscriptions()
+            already_pending = True
+            flash('Payment submitted! Your subscription will be activated after admin verification.', 'success')
+
+    return render_template('subscribe.html', pending=already_pending,
+                           price=SUBSCRIPTION_PRICE_INR, already_subscribed=False)
+
+
+@app.route('/admin/subscriptions', methods=['GET', 'POST'])
+@login_required
+def admin_subscriptions():
+    if session.get('username', '').lower() != 'admin':
+        flash('Admin access required.', 'error')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        action   = request.form.get('action')
+        username = request.form.get('username', '').strip().lower()
+
+        if action == 'approve' and username:
+            SUBSCRIBED_USERS.add(username)
+            for p in PENDING_REQUESTS:
+                if p['username'] == username:
+                    p['status'] = 'approved'
+            # Remove approved from pending list
+            PENDING_REQUESTS[:] = [p for p in PENDING_REQUESTS if p['username'] != username]
+            _save_subscriptions()
+            flash(f'Subscription activated for {username}.', 'success')
+
+        elif action == 'reject' and username:
+            PENDING_REQUESTS[:] = [p for p in PENDING_REQUESTS if p['username'] != username]
+            _save_subscriptions()
+            flash(f'Request from {username} rejected.', 'info')
+
+        elif action == 'revoke' and username:
+            SUBSCRIBED_USERS.discard(username)
+            _save_subscriptions()
+            flash(f'Subscription revoked for {username}.', 'info')
+
+        return redirect(url_for('admin_subscriptions'))
+
+    return render_template('admin_subscriptions.html',
+                           pending=PENDING_REQUESTS,
+                           subscribed=[u for u in SUBSCRIBED_USERS if u != 'admin'],
+                           price=SUBSCRIPTION_PRICE_INR)
 
 
 # ─────────────────────────────────────────────
@@ -792,8 +1082,12 @@ def market_overview():
 
 
 @app.route('/api/compare', methods=['POST'])
+@login_required
 def compare_stocks():
-    """Compare multiple stocks"""
+    """Compare multiple stocks — subscribers only"""
+    username = session.get('username', '').lower()
+    if username not in SUBSCRIBED_USERS:
+        return jsonify({'error': 'premium_required'}), 403
     try:
         data = request.get_json()
         symbols = data.get('symbols', ['AAPL', 'MSFT'])

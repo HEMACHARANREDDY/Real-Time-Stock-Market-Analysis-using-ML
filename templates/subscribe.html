@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>Subscribe - Realtime S Pulse</title>
+    <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .subscribe-page {
+            max-width: 540px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* ── Price Hero ── */
+        .price-hero {
+            background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.12));
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+        }
+        .price-crown {
+            font-size: 2.8rem;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: .5rem;
+        }
+        .price-hero h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary, #f1f5f9);
+            margin-bottom: .4rem;
+        }
+        .price-hero p {
+            color: var(--text-secondary, #94a3b8);
+            font-size: .9rem;
+            line-height: 1.6;
+        }
+        .price-badge {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: .55rem 1.6rem;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 900;
+            border-radius: 50px;
+            letter-spacing: .02em;
+            box-shadow: 0 6px 24px rgba(245,158,11,.35);
+        }
+        .price-badge span {
+            font-size: .75rem;
+            font-weight: 600;
+            vertical-align: super;
+            margin-right: .15rem;
+        }
+        .price-one-time {
+            display: block;
+            font-size: .75rem;
+            color: rgba(255,255,255,.65);
+            margin-top: .3rem;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        /* ── Feature List ── */
+        .features-card {
+            background: var(--bg-card, #1a1f2e);
+            border: 1px solid rgba(148,163,184,.12);
+            border-radius: 12px;
+            padding: 1.4rem 1.6rem;
+        }
+        .features-card h3 {
+            font-size: .9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-secondary, #94a3b8);
+            margin-bottom: 1rem;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: .65rem;
+        }
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            font-size: .9rem;
+            color: var(--text-primary, #f1f5f9);
+        }
+        .feature-list li .feat-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(16,185,129,.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #10b981;
+            font-size: .75rem;
+            flex-shrink: 0;
+        }
+
+        /* ── Payment Steps ── */
+        .steps-card {
+            background: var(--bg-card, #1a1f2e);
+            border: 1px solid rgba(148,163,184,.12);
+            border-radius: 12px;
+            padding: 1.4rem 1.6rem;
+        }
+        .steps-card h3 {
+            font-size: .9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-secondary, #94a3b8);
+            margin-bottom: 1.1rem;
+        }
+        .step-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin-bottom: .85rem;
+        }
+        .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .step-text {
+            font-size: .88rem;
+            color: var(--text-primary, #f1f5f9);
+            line-height: 1.5;
+        }
+        .step-text strong { color: #f59e0b; }
+
+        /* ── UPI Box ── */
+        .upi-box {
+            background: rgba(245,158,11,.08);
+            border: 1px dashed rgba(245,158,11,.35);
+            border-radius: 10px;
+            padding: .9rem 1.2rem;
+            margin: .75rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: .45rem;
+        }
+        .upi-row {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-size: .88rem;
+            color: var(--text-primary, #f1f5f9);
+        }
+        .upi-row i { color: #f59e0b; width: 16px; text-align: center; }
+        .upi-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .92rem;
+            font-weight: 600;
+            color: #f59e0b;
+            background: rgba(245,158,11,.08);
+            padding: .2rem .5rem;
+            border-radius: 5px;
+        }
+        .copy-btn {
+            margin-left: auto;
+            padding: .18rem .55rem;
+            font-size: .75rem;
+            background: rgba(245,158,11,.15);
+            border: 1px solid rgba(245,158,11,.3);
+            color: #f59e0b;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        .copy-btn:hover { background: rgba(245,158,11,.28); }
+
+        /* ── Txn Form ── */
+        .txn-form-card {
+            background: var(--bg-card, #1a1f2e);
+            border: 1px solid rgba(148,163,184,.12);
+            border-radius: 12px;
+            padding: 1.4rem 1.6rem;
+        }
+        .txn-form-card h3 {
+            font-size: .9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-secondary, #94a3b8);
+            margin-bottom: 1rem;
+        }
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: .45rem;
+            margin-bottom: 1rem;
+        }
+        .form-field label {
+            font-size: .83rem;
+            font-weight: 600;
+            color: var(--text-secondary, #94a3b8);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .form-field input {
+            padding: .65rem .9rem;
+            background: rgba(148,163,184,.07);
+            border: 1px solid rgba(148,163,184,.18);
+            border-radius: 8px;
+            color: var(--text-primary, #f1f5f9);
+            font-size: .92rem;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            transition: border-color .2s;
+        }
+        .form-field input:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245,158,11,.12);
+        }
+        .form-field input::placeholder { color: rgba(148,163,184,.5); }
+
+        .btn-pay {
+            width: 100%;
+            padding: .75rem;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-weight: 700;
+            font-size: .95rem;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: opacity .2s, transform .15s;
+            box-shadow: 0 4px 18px rgba(245,158,11,.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+        }
+        .btn-pay:hover { opacity: .88; transform: translateY(-1px); }
+
+        /* ── Pending Banner ── */
+        .pending-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: .8rem;
+            background: rgba(16,185,129,.1);
+            border: 1px solid rgba(16,185,129,.25);
+            border-radius: 12px;
+            padding: 1.1rem 1.4rem;
+            color: #10b981;
+        }
+        .pending-banner i { font-size: 1.2rem; margin-top: .05rem; }
+        .pending-banner div { font-size: .9rem; line-height: 1.55; }
+        .pending-banner strong { display: block; margin-bottom: .2rem; font-size: .95rem; }
+
+        /* ── Flash messages ── */
+        .flash-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
+        .flash-msg {
+            padding: .7rem 1rem;
+            border-radius: 8px;
+            font-size: .9rem;
+            font-weight: 500;
+        }
+        .flash-msg.success { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25); color: #10b981; }
+        .flash-msg.error   { background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.25);  color: #ef4444; }
+        .flash-msg.info    { background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.25); color: #60a5fa; }
+
+        /* ── Premium Member Dashboard ── */
+        .premium-hero {
+            background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(6,182,212,.12));
+            border: 1px solid rgba(16,185,129,.35);
+            border-radius: 20px;
+            padding: 2.2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .premium-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(16,185,129,.18), transparent 65%);
+            pointer-events: none;
+        }
+        .premium-badge-large {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .4rem 1.1rem;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            color: #fff;
+            font-size: .78rem;
+            font-weight: 800;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 18px rgba(16,185,129,.35);
+        }
+        .premium-hero h2 {
+            font-size: 1.7rem;
+            font-weight: 900;
+            color: var(--text-primary, #f1f5f9);
+            margin-bottom: .4rem;
+        }
+        .premium-hero p {
+            color: var(--text-secondary, #94a3b8);
+            font-size: .9rem;
+            line-height: 1.6;
+        }
+        .premium-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .9rem;
+            margin-top: 1.5rem;
+        }
+        @media (max-width: 500px) { .premium-grid { grid-template-columns: 1fr; } }
+        .premium-feat-card {
+            background: rgba(16,185,129,.07);
+            border: 1px solid rgba(16,185,129,.2);
+            border-radius: 12px;
+            padding: 1rem 1.1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: .75rem;
+            text-align: left;
+        }
+        .premium-feat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .9rem;
+            flex-shrink: 0;
+        }
+        .premium-feat-title {
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--text-primary, #f1f5f9);
+            margin-bottom: .2rem;
+        }
+        .premium-feat-desc {
+            font-size: .78rem;
+            color: var(--text-secondary, #94a3b8);
+            line-height: 1.45;
+        }
+        .premium-actions {
+            display: flex;
+            flex-direction: column;
+            gap: .75rem;
+            margin-top: 1.5rem;
+        }
+        .btn-premium-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .6rem;
+            padding: .8rem 1.4rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: .92rem;
+            text-decoration: none;
+            transition: opacity .2s, transform .15s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-premium-action:hover { opacity: .88; transform: translateY(-1px); }
+        .btn-pa-green {
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(16,185,129,.3);
+        }
+        .btn-pa-blue {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(59,130,246,.3);
+        }
+        .btn-pa-outline {
+            background: rgba(148,163,184,.08);
+            border: 1px solid rgba(148,163,184,.2);
+            color: var(--text-secondary, #94a3b8);
+        }
+        .premium-member-info {
+            background: var(--bg-card, #1a1f2e);
+            border: 1px solid rgba(148,163,184,.12);
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .pmi-avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .pmi-name { font-size: 1rem; font-weight: 700; color: var(--text-primary,#f1f5f9); }
+        .pmi-status { font-size: .8rem; color: #10b981; font-weight: 600; margin-top: 2px; }
+        .pmi-badge {
+            margin-left: auto;
+            padding: .3rem .9rem;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            color: #fff;
+            font-size: .75rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            border-radius: 50px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar (standard) -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg></div>
+                <div class="logo-text"><h1>S Pulse</h1><span class="logo-badge">AI</span></div>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a></li>
+            <li class="nav-item"><a href="/analysis" class="nav-link"><i class="fas fa-chart-bar"></i><span>Technical Analysis</span></a></li>
+            <li class="nav-item"><a href="/predictions" class="nav-link"><i class="fas fa-brain"></i><span>ML Predictions</span></a></li>
+            <li class="nav-item"><a href="/market-predictions" class="nav-link"><i class="fas fa-globe"></i><span>Market Predictions</span></a></li>
+            <li class="nav-item"><a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i><span>Compare Stocks</span></a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
+                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
+                </div>
+            </div>
+            <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
+            <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h2 class="page-title">Subscribe</h2>
+                <span class="page-subtitle">Unlock Text Report &amp; Premium Features</span>
+            </div>
+            <div class="topbar-right">
+                <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+            </div>
+        </header>
+
+        <div class="subscribe-page">
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <ul class="flash-list">
+                {% for category, message in messages %}
+                <li class="flash-msg {{ category }}"><i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i> {{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
+
+            {% if already_subscribed %}
+            <!-- ── PREMIUM MEMBER DASHBOARD ── -->
+            <div class="premium-hero">
+                <div class="premium-badge-large"><i class="fas fa-crown"></i> Premium Member</div>
+                <h2>You're All Unlocked! 🎉</h2>
+                <p>Thank you for subscribing. All premium features are active on your account <strong>{{ current_user|capitalize }}</strong>.</p>
+            </div>
+
+            <!-- Member Info -->
+            <div class="premium-member-info">
+                <div class="pmi-avatar">{{ current_user[0]|upper }}</div>
+                <div>
+                    <div class="pmi-name">{{ current_user|capitalize }}</div>
+                    <div class="pmi-status"><i class="fas fa-circle-check"></i> Active Premium Subscription</div>
+                </div>
+                <span class="pmi-badge">PRO</span>
+            </div>
+
+            <!-- Premium Features Grid -->
+            <div class="features-card">
+                <h3>Your Premium Features</h3>
+                <div class="premium-grid">
+                    <div class="premium-feat-card">
+                        <div class="premium-feat-icon"><i class="fas fa-balance-scale"></i></div>
+                        <div>
+                            <div class="premium-feat-title">Stock Comparison</div>
+                            <div class="premium-feat-desc">Compare up to 10 stocks side-by-side with charts, metrics &amp; rankings</div>
+                        </div>
+                    </div>
+                    <div class="premium-feat-card">
+                        <div class="premium-feat-icon"><i class="fas fa-file-arrow-down"></i></div>
+                        <div>
+                            <div class="premium-feat-title">Download Text Report</div>
+                            <div class="premium-feat-desc">Export full comparison &amp; analysis reports as printable text</div>
+                        </div>
+                    </div>
+                    <div class="premium-feat-card">
+                        <div class="premium-feat-icon"><i class="fas fa-brain"></i></div>
+                        <div>
+                            <div class="premium-feat-title">Advanced ML Predictions</div>
+                            <div class="premium-feat-desc">Detailed AI forecasts with confidence scores &amp; model insights</div>
+                        </div>
+                    </div>
+                    <div class="premium-feat-card">
+                        <div class="premium-feat-icon"><i class="fas fa-chart-bar"></i></div>
+                        <div>
+                            <div class="premium-feat-title">Technical Analysis Report</div>
+                            <div class="premium-feat-desc">Full text-based technical summary — RSI, MACD, Bollinger &amp; more</div>
+                        </div>
+                    </div>
+                    <div class="premium-feat-card">
+                        <div class="premium-feat-icon"><i class="fas fa-globe"></i></div>
+                        <div>
+                            <div class="premium-feat-title">Market Predictions Report</div>
+                            <div class="premium-feat-desc">Batch AI predictions for global markets in downloadable format</div>
+                        </div>
+                    </div>
+                    <div class="premium-feat-card">
+                        <div class="premium-feat-icon"><i class="fas fa-infinity"></i></div>
+                        <div>
+                            <div class="premium-feat-title">Lifetime Access</div>
+                            <div class="premium-feat-desc">One-time payment — all future premium features included forever</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="premium-actions">
+                <a href="/compare" class="btn-premium-action btn-pa-green">
+                    <i class="fas fa-balance-scale"></i> Go to Compare Stocks
+                </a>
+                <a href="/analysis" class="btn-premium-action btn-pa-blue">
+                    <i class="fas fa-chart-bar"></i> Open Technical Analysis
+                </a>
+                <a href="/predictions" class="btn-premium-action btn-pa-blue">
+                    <i class="fas fa-brain"></i> Run ML Predictions
+                </a>
+                <a href="/" class="btn-premium-action btn-pa-outline">
+                    <i class="fas fa-th-large"></i> Back to Dashboard
+                </a>
+            </div>
+
+            {% else %}
+            <!-- Price Hero -->
+            <div class="price-hero">
+                <div class="price-crown"><i class="fas fa-crown"></i></div>
+                <h2>S Pulse Premium</h2>
+                <p>One-time payment to unlock the full <strong>Text Report</strong> and all upcoming premium features forever.</p>
+                <div class="price-badge"><span>₹</span>{{ price }}<span class="price-one-time">one-time</span></div>
+            </div>
+
+            <!-- Features -->
+            <div class="features-card">
+                <h3>What You Get</h3>
+                <ul class="feature-list">
+                    <li><div class="feat-icon"><i class="fas fa-file-lines"></i></div>Full ranked stock comparison text report</li>
+                    <li><div class="feat-icon"><i class="fas fa-chart-bar"></i></div>Visual return bar charts &amp; key metric highlights</li>
+                    <li><div class="feat-icon"><i class="fas fa-print"></i></div>Printable &amp; copy-friendly report format</li>
+                    <li><div class="feat-icon"><i class="fas fa-lock-open"></i></div>Access to all future premium features</li>
+                    <li><div class="feat-icon"><i class="fas fa-infinity"></i></div>Lifetime access — pay once, use forever</li>
+                </ul>
+            </div>
+
+            {% if pending %}
+            <!-- Already Pending -->
+            <div class="pending-banner">
+                <i class="fas fa-clock"></i>
+                <div>
+                    <strong>Payment Under Review</strong>
+                    Your payment has been submitted and is awaiting admin verification.
+                    Access will be activated within a few hours. Thank you for your patience!
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Payment Steps -->
+            <div class="steps-card">
+                <h3>How to Pay</h3>
+                <div class="step-row">
+                    <div class="step-num">1</div>
+                    <div class="step-text">Open any UPI app (GPay, PhonePe, Paytm, etc.) and send <strong>₹{{ price }}</strong> to the UPI ID below.</div>
+                </div>
+                <div class="upi-box">
+                    <div class="upi-row">
+                        <i class="fas fa-mobile-screen"></i>
+                        <span>UPI ID:</span>
+                        <span class="upi-id" id="upiIdText">spulse@upi</span>
+                        <button class="copy-btn" onclick="copyUPI()"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                    <div class="upi-row">
+                        <i class="fas fa-indian-rupee-sign"></i>
+                        <span>Amount: <strong style="color:#f59e0b;">₹{{ price }}</strong></span>
+                    </div>
+                    <div class="upi-row">
+                        <i class="fas fa-user"></i>
+                        <span>Note (optional): Your username — <strong style="color:#f59e0b;">{{ current_user }}</strong></span>
+                    </div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">2</div>
+                    <div class="step-text">After payment, <strong>copy the UPI Transaction ID</strong> (12-digit reference number) from your payment app.</div>
+                </div>
+                <div class="step-row">
+                    <div class="step-num">3</div>
+                    <div class="step-text">Enter your Transaction ID below and click <strong>Submit Payment</strong>. Admin will verify and activate your account.</div>
+                </div>
+            </div>
+
+            <!-- Transaction ID Form -->
+            <div class="txn-form-card">
+                <h3>Submit Your Payment</h3>
+                <form method="POST" action="/subscribe">
+                    <div class="form-field">
+                        <label>UPI Transaction ID</label>
+                        <input type="text" name="txn_id" placeholder="e.g. 412345678901"
+                               pattern="\S{6,}" minlength="6" required
+                               title="Enter the transaction/reference ID from your UPI payment">
+                    </div>
+                    <div class="form-field" style="flex-direction:row; align-items:center; gap:.5rem; margin-bottom:1.2rem;">
+                        <input type="checkbox" id="confirmPay" required style="width:auto; accent-color:#f59e0b;">
+                        <label for="confirmPay" style="text-transform:none; letter-spacing:0; font-size:.85rem; cursor:pointer;">
+                            I confirm I have paid <strong>₹{{ price }}</strong> to the UPI ID above.
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-pay">
+                        <i class="fas fa-paper-plane"></i> Submit Payment
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% endif %}{# end already_subscribed #}
+        </div>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="/static/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => { initCommon(); });
+        function copyUPI() {
+            const id = document.getElementById('upiIdText').textContent.trim();
+            navigator.clipboard.writeText(id).then(() => {
+                showToast('UPI ID copied!', 'success');
+            }).catch(() => {
+                showToast('Copy failed — please copy manually', 'error');
+            });
+        }
+    </script>
+</body>
+</html>

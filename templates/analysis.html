@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <title>Technical Analysis - Realtime S Pulse</title>
+    <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -36,10 +38,10 @@
         </ul>
         <div class="sidebar-footer">
             <div class="user-info">
-                <div class="user-avatar">{{ current_user[0]|upper }}</div>
+                <div class="user-avatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
                 <div class="user-details">
-                    <div class="user-name">{{ current_user|capitalize }}</div>
-                    <div class="user-role">Analyst</div>
+                    <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
+                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
                 </div>
             </div>
             <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
@@ -55,6 +57,11 @@
                 <span class="page-subtitle" id="currentDate"></span>
             </div>
             <div class="topbar-right">
+                {% if not is_subscribed %}
+                <a href="/subscribe" class="btn-subscribe-topbar">
+                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                </a>
+                {% endif %}
                 <div class="topbar-actions">
                     <button class="btn-icon" id="refreshBtn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
                     <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
@@ -98,12 +105,98 @@
                 <button class="view-toggle-btn active" id="btnAnalysisGraph" onclick="switchAnalysisView('graph')">
                     <i class="fas fa-chart-area"></i> Graph View
                 </button>
-                <button class="view-toggle-btn" id="btnAnalysisText" onclick="switchAnalysisView('text')">
-                    <i class="fas fa-file-lines"></i> Text Report
+                <button class="view-toggle-btn{% if not is_subscribed %} locked{% endif %}"
+                        id="btnAnalysisText"
+                        onclick="switchAnalysisView('text')"
+                        data-subscribed="{{ 'true' if is_subscribed else 'false' }}">
+                    <i class="fas {% if is_subscribed %}fa-file-lines{% else %}fa-lock{% endif %}"></i>
+                    Text Report
+                    {% if not is_subscribed %}<span class="pro-badge">PRO</span>{% endif %}
                 </button>
             </div>
-            <span class="view-toggle-hint">Switch to Text Report if charts don't load</span>
+            <span class="view-toggle-hint" id="analysisViewHint">Switch to Text Report if charts don't load</span>
         </div>
+
+        <style>
+            .view-toggle-btn.locked { opacity: .7; }
+            .pro-badge {
+                display: inline-block; margin-left: .35rem; padding: 1px 6px;
+                background: linear-gradient(135deg, #f59e0b, #ef4444);
+                color: #fff; font-size: .6rem; font-weight: 700;
+                border-radius: 4px; vertical-align: middle; letter-spacing: .04em;
+            }
+            /* Blur gate */
+            .blur-gate-wrap {
+                position: relative;
+                border-radius: 12px;
+                overflow: hidden;
+                min-height: 480px;
+            }
+            .blur-gate-bg {
+                filter: blur(8px);
+                user-select: none;
+                pointer-events: none;
+                padding: 2rem;
+                opacity: .7;
+            }
+            .blur-gate-overlay {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: .85rem;
+                background: rgba(10,14,23,0.62);
+                padding: 2.5rem 2rem;
+                text-align: center;
+                z-index: 10;
+            }
+            .blur-gate-overlay .gate-icon {
+                font-size: 3rem;
+                background: linear-gradient(135deg, #f59e0b, #ef4444);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            .blur-gate-overlay h3 { font-size: 1.3rem; font-weight: 800; color: #f1f5f9; margin:0; }
+            .blur-gate-overlay p { color: #94a3b8; max-width: 380px; line-height: 1.6; font-size: .9rem; margin:0; }
+            .blur-gate-price {
+                font-size: 2.2rem; font-weight: 900; line-height: 1.1;
+                background: linear-gradient(135deg, #f59e0b, #ef4444);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            .blur-gate-price small { font-size: .7rem; font-weight: 600; display: block; color: rgba(255,255,255,.55); -webkit-text-fill-color: rgba(255,255,255,.55); margin-top: .15rem; }
+            .blur-gate-features {
+                list-style: none; padding: 0; margin: 0;
+                display: flex; flex-direction: column; gap: .3rem;
+                color: #94a3b8; font-size: .85rem; text-align: left;
+            }
+            .blur-gate-features li::before { content: "\2713  "; color: #10b981; font-weight: 700; }
+            .btn-gate-subscribe {
+                display: inline-flex; align-items: center; gap: .5rem;
+                padding: .7rem 1.8rem;
+                background: linear-gradient(135deg, #f59e0b, #ef4444);
+                color: #fff; font-weight: 700; font-size: .95rem;
+                border: none; border-radius: 9px; cursor: pointer;
+                box-shadow: 0 4px 20px rgba(245,158,11,.4);
+                transition: opacity .2s, transform .15s;
+                text-decoration: none;
+            }
+            .btn-gate-subscribe:hover { opacity: .88; transform: translateY(-2px); }
+            .btn-gate-back {
+                display: inline-flex; align-items: center; gap: .5rem;
+                padding: .55rem 1.1rem;
+                background: rgba(148,163,184,.1); border: 1px solid rgba(148,163,184,.2);
+                color: #94a3b8; font-weight: 600; font-size: .85rem;
+                border-radius: 8px; cursor: pointer; background-color: transparent;
+                transition: background .2s;
+            }
+            .btn-gate-back:hover { background: rgba(148,163,184,.2); }
+            .gate-actions-row { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+        </style>
 
         <!-- GRAPH VIEW -->
         <div id="analysisGraphView">

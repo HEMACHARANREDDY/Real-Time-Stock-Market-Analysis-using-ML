@@ -1,13 +1,92 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <title>Compare Stocks - Realtime S Pulse</title>
+    <!-- Set theme BEFORE css renders to prevent flash -->
+    <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        /* ── View Toggle Bar ── */
+        .view-toggle-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem;padding:.75rem 1rem;background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;}
+        .view-toggle-group{display:flex;gap:.5rem;flex-wrap:wrap;}
+        .view-toggle-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary);font-size:.85rem;font-weight:600;border-radius:8px;cursor:pointer;transition:background .2s,color .2s,border-color .2s;}
+        .view-toggle-btn:hover{background:var(--bg-hover);color:var(--text-primary);}
+        .view-toggle-btn.active{background:var(--accent-blue,#3b82f6);border-color:var(--accent-blue,#3b82f6);color:#fff;}
+        .view-toggle-hint{font-size:.78rem;color:var(--text-muted);}
+        /* ── Compare Cards ── */
+        .compare-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem;}
+        .compare-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:1.25rem;}
+        .compare-card h4{font-size:1.1rem;font-weight:800;margin:0 0 .4rem;color:var(--text-primary);}
+        .compare-price{font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:.3rem;}
+        .compare-return{font-size:.9rem;font-weight:700;margin-bottom:.25rem;}
+        .compare-return.positive{color:#10b981;} .compare-return.negative{color:#ef4444;}
+        .compare-volatility{font-size:.78rem;color:var(--text-muted);}
+        /* ── Tag Input ── */
+        .stock-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;background:var(--accent-blue,#3b82f6);color:#fff;border-radius:6px;font-size:.82rem;font-weight:700;}
+        .tag-remove{background:none;border:none;color:rgba(255,255,255,.75);cursor:pointer;font-size:1rem;line-height:1;padding:0;}
+        .tag-remove:hover{color:#fff;}
+        .tag-typing{background:transparent;border:none;outline:none;color:var(--text-primary);font-size:.9rem;min-width:200px;}
+        .tag-input-wrapper{border:1px solid var(--border-color);border-radius:8px;padding:.45rem .75rem;background:var(--bg-secondary);cursor:text;}
+        .sug-chip{padding:.25rem .65rem;background:var(--bg-secondary);border:1px solid var(--border-color);color:var(--text-secondary);border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s;}
+        .sug-chip:hover{background:var(--bg-hover);color:var(--text-primary);}
+        .sug-chip.active{background:var(--accent-blue,#3b82f6);border-color:var(--accent-blue,#3b82f6);color:#fff;}
+        .compare-input-row{display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;}
+        .suggestions-panel{margin-top:1rem;}
+        .suggestions-title{font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em;}
+        .suggestion-groups{display:flex;flex-wrap:wrap;gap:.75rem;}
+        .suggestion-group{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem;}
+        .sg-label{font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-right:.2rem;}
+        /* ── Premium Gate ── */
+        .premium-gate-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1.2rem;padding:3rem 1.5rem;}
+        .gate-crown-icon{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(239,68,68,.12));border:2px solid rgba(245,158,11,.3);display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto;}
+        .gate-crown-icon i{background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+        .premium-gate-page h2{font-size:2rem;font-weight:800;color:var(--text-primary);margin:0;}
+        .gate-sub{font-size:1rem;color:var(--text-secondary);max-width:480px;line-height:1.6;margin:0;}
+        .gate-price-badge{font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+        .gate-price-badge small{font-size:.7rem;font-weight:600;display:block;color:var(--text-muted);-webkit-text-fill-color:var(--text-muted);margin-top:.2rem;}
+        .gate-features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;width:100%;max-width:560px;}
+        .gate-feature-item{display:flex;align-items:center;gap:.6rem;padding:.75rem 1rem;background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;font-size:.88rem;color:var(--text-primary);text-align:left;}
+        .gate-feature-item i{color:#10b981;font-size:1rem;flex-shrink:0;}
+        .gate-actions{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;}
+        .btn-gate-buy{display:inline-flex;align-items:center;gap:.5rem;padding:.8rem 2.2rem;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:700;font-size:1rem;border:none;border-radius:10px;cursor:pointer;text-decoration:none;box-shadow:0 6px 24px rgba(245,158,11,.35);transition:opacity .2s,transform .15s;}
+        .btn-gate-buy:hover{opacity:.88;transform:translateY(-2px);color:#fff;}
+        /* ── Text Report ── */
+        .text-report{padding:1.5rem;}
+        .tr-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;}
+        .tr-title{font-size:1.1rem;font-weight:800;color:var(--text-primary);}
+        .tr-date{font-size:.82rem;color:var(--text-muted);}
+        .tr-section{margin-bottom:1.75rem;}
+        .tr-section-title{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:1px solid var(--border-color);}
+        .tr-overview-text{font-size:.92rem;color:var(--text-secondary);line-height:1.7;margin:0;}
+        .tr-ranking{display:flex;flex-direction:column;gap:.5rem;}
+        .tr-rank-row{display:flex;align-items:center;gap:.75rem;}
+        .tr-rank-num{width:20px;font-size:.8rem;font-weight:700;color:var(--text-muted);text-align:right;}
+        .tr-rank-sym{width:70px;font-size:.9rem;font-weight:800;color:var(--text-primary);}
+        .tr-rank-bar-wrap{flex:1;height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;}
+        .tr-rank-bar{height:100%;border-radius:4px;transition:width .4s;}
+        .tr-rank-bar.pos{background:linear-gradient(90deg,#10b981,#06b6d4);}
+        .tr-rank-bar.neg{background:linear-gradient(90deg,#ef4444,#f59e0b);}
+        .tr-rank-val{width:70px;font-size:.85rem;font-weight:700;text-align:right;}
+        .tr-positive{color:#10b981;} .tr-negative{color:#ef4444;}
+        .tr-stock-block{background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem;}
+        .tr-stock-header{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap;}
+        .tr-rank{font-size:.75rem;font-weight:700;color:var(--text-muted);}
+        .tr-sym{font-size:1.1rem;font-weight:800;color:var(--text-primary);}
+        .tr-return{font-size:.85rem;font-weight:700;padding:.2rem .6rem;border-radius:5px;background:var(--bg-card);}
+        .tr-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.4rem;margin-bottom:.75rem;}
+        .tr-metric{display:flex;flex-direction:column;gap:.1rem;}
+        .tr-metric-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;}
+        .tr-metric-value{font-size:.9rem;font-weight:700;color:var(--text-primary);}
+        .tr-summary-text{font-size:.85rem;color:var(--text-secondary);line-height:1.6;}
+        .tr-highlights{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.55rem;}
+        .tr-highlights li{font-size:.9rem;color:var(--text-secondary);}
+    </style>
 </head>
 <body>
     <nav class="sidebar" id="sidebar">
@@ -34,10 +113,10 @@
         </ul>
         <div class="sidebar-footer">
             <div class="user-info">
-                <div class="user-avatar">{{ current_user[0]|upper }}</div>
+                <div class="user-avatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
                 <div class="user-details">
-                    <div class="user-name">{{ current_user|capitalize }}</div>
-                    <div class="user-role">Analyst</div>
+                    <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
+                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
                 </div>
             </div>
             <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
@@ -52,19 +131,63 @@
                 <span class="page-subtitle" id="currentDate"></span>
             </div>
             <div class="topbar-right">
+                {% if not is_subscribed %}
+                <a href="/subscribe" class="btn-subscribe-topbar">
+                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                </a>
+                {% endif %}
+                {% if current_user == 'admin' %}
+                <a href="/admin/subscriptions" style="display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .9rem;
+                    background:rgba(148,163,184,.1);border:1px solid rgba(148,163,184,.2);
+                    color:var(--text-secondary,#94a3b8);font-weight:600;font-size:.8rem;
+                    border-radius:8px;text-decoration:none;">
+                    <i class="fas fa-shield-halved"></i> Admin
+                </a>
+                {% endif %}
                 <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
             </div>
         </header>
+
+        {% if not is_subscribed %}
+        <!-- ════════════════════════════════════════ -->
+        <!--  PREMIUM GATE  (non-subscribers)        -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="premium-gate-page">
+            <div class="gate-crown-icon"><i class="fas fa-crown"></i></div>
+            <h2>Premium Feature</h2>
+            <p class="gate-sub">
+                <strong>Compare Stocks</strong> lets you pit up to 5 stocks head-to-head with
+                performance charts, metrics, text reports and download — all in one place.
+                Unlock it with a one-time ₹25 payment.
+            </p>
+            <div class="gate-price-badge">₹25<small>one-time &middot; lifetime access</small></div>
+            <div class="gate-features-grid">
+                <div class="gate-feature-item"><i class="fas fa-chart-line"></i> Normalized performance chart</div>
+                <div class="gate-feature-item"><i class="fas fa-table"></i> Side-by-side metrics table</div>
+                <div class="gate-feature-item"><i class="fas fa-file-lines"></i> Full text comparison report</div>
+                <div class="gate-feature-item"><i class="fas fa-file-arrow-down"></i> Download report as .txt</div>
+                <div class="gate-feature-item"><i class="fas fa-bolt"></i> Up to 5 stocks at once</div>
+                <div class="gate-feature-item"><i class="fas fa-infinity"></i> All future premium features</div>
+            </div>
+            <div class="gate-actions">
+                <a href="/subscribe" class="btn-gate-buy">
+                    <i class="fas fa-crown"></i> Subscribe for ₹25
+                </a>
+            </div>
+        </div>
+        {% else %}
 
         <!-- Compare Controls -->
         <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
             <!-- Tag input row -->
             <div class="compare-input-row">
                 <div class="control-group" style="flex:1;">
-                    <label>Symbols <span style="opacity:.6;font-weight:400;">(click suggestions or type &amp; press Enter / comma)</span></label>
+                    <label>Symbols <span style="opacity:.6;font-weight:400;">(click Quick Add chips below, or type &amp; press Enter)</span></label>
+                    <!-- Selected tag pills shown here -->
+                    <div class="tag-list" id="tagList" style="display:flex;flex-wrap:wrap;gap:.35rem;min-height:28px;margin-bottom:.4rem;"></div>
+                    <div style="font-size:.75rem;margin-bottom:.4rem;" id="tagCounter">No stocks selected — click chips below or type above</div>
                     <div class="tag-input-wrapper" id="tagInputWrapper">
-                        <div class="tag-list" id="tagList"></div>
-                        <input type="text" id="tagTyping" class="tag-typing" placeholder="Type symbol…" autocomplete="off" spellcheck="false">
+                        <input type="text" id="tagTyping" class="tag-typing" placeholder="e.g. AAPL,MSFT,GOOGL — press Enter" autocomplete="off" spellcheck="false" style="width:100%;">
                     </div>
                     <!-- hidden, kept in sync for runComparison() -->
                     <input type="hidden" id="compareSymbols">
@@ -138,21 +261,185 @@
             </div>
         </div>
 
+        <!-- View Toggle Bar (hidden until first comparison runs) -->
+        <div class="view-toggle-bar" id="viewToggleBar" style="display:none;">
+            <div class="view-toggle-group">
+                <button class="view-toggle-btn active" id="btnGraphView" onclick="switchView('graph')">
+                    <i class="fas fa-chart-area"></i> Graph View
+                </button>
+                <button class="view-toggle-btn" id="btnTextView" onclick="switchView('text')">
+                    <i class="fas fa-file-lines"></i> Text Report
+                </button>
+                <button class="view-toggle-btn" id="btnDownloadReport" onclick="downloadTextReport()">
+                    <i class="fas fa-file-arrow-down"></i> Download Report
+                </button>
+            </div>
+            <span class="view-toggle-hint" id="viewToggleHint">Switch between charts and text report</span>
+        </div>
+
         <!-- Comparison Results -->
         <div id="compareResults" style="display:none;">
 
-            <!-- View Toggle -->
-            <div class="view-toggle-bar">
-                <div class="view-toggle-group">
-                    <button class="view-toggle-btn active" id="btnGraphView" onclick="switchView('graph')">
-                        <i class="fas fa-chart-area"></i> Graph View
-                    </button>
-                    <button class="view-toggle-btn" id="btnTextView" onclick="switchView('text')">
-                        <i class="fas fa-file-lines"></i> Text Report
-                    </button>
-                </div>
-                <span class="view-toggle-hint" id="viewToggleHint">Switch to Text Report if graphs don't load</span>
-            </div>
+            <!-- styles moved to <head> -->
+            <div style="display:none"> <!-- placeholder keeps structure intact -->
+                .view-toggle-btn.locked:hover { background: inherit; }
+                .pro-badge {
+                    display: inline-block;
+                    margin-left: .35rem;
+                    padding: 1px 6px;
+                    background: linear-gradient(135deg, #f59e0b, #ef4444);
+                    color: #fff;
+                    font-size: .6rem;
+                    font-weight: 700;
+                    border-radius: 4px;
+                    vertical-align: middle;
+                    letter-spacing: .04em;
+                }
+                .subscription-gate {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 1rem;
+                    padding: 3.5rem 2rem;
+                    text-align: center;
+                }
+                .subscription-gate .gate-icon {
+                    font-size: 3.5rem;
+                    background: linear-gradient(135deg, #f59e0b, #ef4444);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+                .subscription-gate h3 {
+                    font-size: 1.4rem;
+                    font-weight: 700;
+                    color: var(--text-primary);
+                }
+                .subscription-gate p {
+                    max-width: 420px;
+                    color: var(--text-secondary);
+                    line-height: 1.6;
+                }
+                .subscription-gate .gate-features {
+                    list-style: none;
+                    padding: 0;
+                    margin: .5rem 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: .4rem;
+                    color: var(--text-secondary);
+                    font-size: .9rem;
+                }
+                .subscription-gate .gate-features li::before { content: "✓  "; color: #10b981; font-weight: 700; }
+                .subscription-gate .gate-note {
+                    font-size: .8rem;
+                    opacity: .55;
+                    margin-top: .25rem;
+                }
+                .gate-actions {
+                    display: flex;
+                    gap: .75rem;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    margin-top: .5rem;
+                }
+                .btn-subscribe {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: .5rem;
+                    padding: .65rem 1.5rem;
+                    background: linear-gradient(135deg, #f59e0b, #ef4444);
+                    color: #fff;
+                    font-weight: 700;
+                    font-size: .9rem;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: opacity .2s, transform .15s;
+                    box-shadow: 0 4px 18px rgba(245,158,11,.35);
+                }
+                .btn-subscribe:hover { opacity: .88; transform: translateY(-1px); }
+                .btn-back-graph {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: .5rem;
+                    padding: .65rem 1.25rem;
+                    background: rgba(148,163,184,.12);
+                    color: var(--text-secondary);
+                    font-weight: 600;
+                    font-size: .9rem;
+                    border: 1px solid rgba(148,163,184,.2);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: background .2s;
+                }
+                .btn-back-graph:hover { background: rgba(148,163,184,.22); }
+                /* Subscribe modal */
+                .subscribe-modal-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0,0,0,.65);
+                    backdrop-filter: blur(4px);
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 1rem;
+                }
+                .subscribe-modal {
+                    position: relative;
+                    background: var(--bg-card, #1a1f2e);
+                    border: 1px solid rgba(245,158,11,.25);
+                    border-radius: 16px;
+                    padding: 2.5rem 2rem 2rem;
+                    max-width: 420px;
+                    width: 100%;
+                    text-align: center;
+                    box-shadow: 0 24px 64px rgba(0,0,0,.6);
+                    display: flex;
+                    flex-direction: column;
+                    gap: .9rem;
+                }
+                .modal-close {
+                    position: absolute;
+                    top: .75rem; right: 1rem;
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-size: 1.4rem;
+                    cursor: pointer;
+                    line-height: 1;
+                }
+                .modal-close:hover { color: var(--text-primary); }
+                .modal-icon {
+                    font-size: 2.5rem;
+                    background: linear-gradient(135deg, #f59e0b, #ef4444);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+                .subscribe-modal h3 { font-size: 1.2rem; font-weight: 700; }
+                .subscribe-modal p { color: var(--text-secondary); font-size: .9rem; line-height: 1.6; }
+                .modal-contact-box {
+                    background: rgba(148,163,184,.08);
+                    border: 1px solid rgba(148,163,184,.15);
+                    border-radius: 10px;
+                    padding: .9rem 1.2rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: .55rem;
+                    text-align: left;
+                }
+                .modal-contact-row {
+                    display: flex;
+                    align-items: center;
+                    gap: .6rem;
+                    font-size: .88rem;
+                    color: var(--text-primary);
+                }
+                .modal-contact-row i { color: #f59e0b; width: 16px; text-align: center; }
+            </div> <!-- end placeholder -->
 
             <!-- ── GRAPH VIEW ── -->
             <div id="graphView">
@@ -209,11 +496,17 @@
                 <div class="glass-card" id="textReportCard"></div>
             </div>
 
-        </div>
+        </div><!-- end compareResults -->
+
+        {% endif %}<!-- end subscriber gate -->
     </main>
 
     <div class="toast-container" id="toastContainer"></div>
     <script src="/static/js/app.js"></script>
+    {% if is_subscribed %}
     <script src="/static/js/compare.js"></script>
+    {% else %}
+    <script>document.addEventListener('DOMContentLoaded', () => { initCommon(); });</script>
+    {% endif %}
 </body>
 </html>
