@@ -266,14 +266,21 @@ def logout():
 # GOOGLE OAUTH ROUTES
 # ─────────────────────────────────────────────
 def _get_redirect_uri():
-    """Return the OAuth redirect URI — env var takes priority over auto-detect."""
+    """Return the OAuth redirect URI — multiple fallbacks for reliability."""
+    # 1. Explicit env var (highest priority)
     env_uri = os.environ.get('REDIRECT_URI', '').strip()
     if env_uri:
+        print(f'[OAUTH] Using REDIRECT_URI env var: {env_uri}')
         return env_uri
-    # Auto-detect: force https on Render
+    # 2. Render auto-detects its own hostname via RENDER_EXTERNAL_HOSTNAME
+    render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '').strip()
+    if render_host:
+        uri = f'https://{render_host}/auth/google/callback'
+        print(f'[OAUTH] Using RENDER_EXTERNAL_HOSTNAME: {uri}')
+        return uri
+    # 3. Local fallback
     uri = url_for('google_callback', _external=True)
-    if os.environ.get('RENDER'):
-        uri = uri.replace('http://', 'https://')
+    print(f'[OAUTH] Using url_for fallback: {uri}')
     return uri
 
 @app.route('/auth/google')
