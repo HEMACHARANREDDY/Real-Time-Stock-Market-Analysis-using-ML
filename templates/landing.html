@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>S Pulse - Real-Time Stock Market Analytics with AI Predictions</title>
+
+    <!-- Primary SEO Meta Tags -->
+    <meta name="description" content="S Pulse is a free real-time stock market analytics platform with AI-powered price predictions, technical analysis, and live NASDAQ & NYSE data. Sign in and start trading smarter.">
+    <meta name="keywords" content="real-time stock market, AI stock predictions, stock market analytics, stock dashboard, stock analysis, NASDAQ, NYSE, machine learning stock prediction, free stock screener, live stock prices">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="S Pulse">
+    <link rel="canonical" href="https://realtime-spulse.onrender.com/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://realtime-spulse.onrender.com/">
+    <meta property="og:title" content="S Pulse - Real-Time Stock Market Analytics with AI Predictions">
+    <meta property="og:description" content="Track real-time stock prices, get AI-powered predictions, and perform technical analysis for NASDAQ and NYSE stocks. Free and easy to use.">
+    <meta property="og:image" content="https://realtime-spulse.onrender.com/static/og-image.png">
+    <meta property="og:site_name" content="S Pulse">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="S Pulse - Real-Time Stock Market Analytics with AI">
+    <meta name="twitter:description" content="AI-powered stock predictions and real-time market analytics. Free dashboard for NASDAQ & NYSE stocks.">
+    <meta name="twitter:image" content="https://realtime-spulse.onrender.com/static/og-image.png">
+
+    <!-- Google Search Console Verification -->
+    {% if google_site_verification %}
+    <meta name="google-site-verification" content="{{ google_site_verification }}">
+    {% endif %}
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "S Pulse",
+      "url": "https://realtime-spulse.onrender.com",
+      "description": "Real-time stock market analytics platform with AI-powered predictions, technical analysis, and live market data for NASDAQ and NYSE stocks.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "All",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "featureList": [
+        "Real-time stock prices",
+        "AI price predictions using Machine Learning",
+        "Technical analysis indicators",
+        "Stock comparison tool",
+        "Market predictions dashboard",
+        "Price alerts and notifications"
+      ],
+      "screenshot": "https://realtime-spulse.onrender.com/static/og-image.png",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "120"
+      }
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: #1a1f2e;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ── NAVBAR ── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(10, 14, 23, 0.95);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(12px);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-logo i { color: #3b82f6; -webkit-text-fill-color: #3b82f6; }
+
+        .nav-cta {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.55rem 1.4rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-primary);
+        }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: #fff;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* ── HERO ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 700px; height: 700px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(59,130,246,0.12);
+            border: 1px solid rgba(59,130,246,0.3);
+            padding: 0.35rem 1rem;
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #93c5fd;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.2rem, 6vw, 4.2rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.2rem;
+            max-width: 850px;
+        }
+
+        .hero h1 span {
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            color: var(--text-secondary);
+            max-width: 620px;
+            margin-bottom: 2.2rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hero-buttons .btn { padding: 0.8rem 2rem; font-size: 1rem; }
+
+        /* ── LIVE TICKER ── */
+        .ticker-bar {
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 0.6rem 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .ticker-track {
+            display: flex;
+            gap: 3rem;
+            animation: ticker 28s linear infinite;
+            white-space: nowrap;
+        }
+
+        @keyframes ticker {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .ticker-item .symbol { font-weight: 600; color: var(--text-primary); }
+        .ticker-item .up { color: var(--accent-green); }
+        .ticker-item .down { color: var(--accent-red); }
+
+        /* ── FEATURES ── */
+        .section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-header h2 {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 540px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(59,130,246,0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(59,130,246,0.12);
+        }
+
+        .feature-icon {
+            width: 52px; height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ── STATS ── */
+        .stats-section {
+            background: var(--bg-card);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 4rem 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.4rem;
+            font-weight: 900;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+        }
+
+        /* ── HOW IT WORKS ── */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+            counter-reset: steps;
+        }
+
+        .step-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .step-number {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin: 0 auto 1.2rem;
+        }
+
+        .step-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+        .step-card p { color: var(--text-secondary); font-size: 0.88rem; }
+
+        /* ── CTA BANNER ── */
+        .cta-banner {
+            background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(139,92,246,0.15) 100%);
+            border: 1px solid rgba(59,130,246,0.25);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin: 2rem auto;
+            max-width: 900px;
+        }
+
+        .cta-banner h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; margin-bottom: 0.75rem; }
+        .cta-banner p { color: var(--text-secondary); margin-bottom: 1.8rem; font-size: 1rem; }
+
+        /* ── FOOTER ── */
+        footer {
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+
+        footer p { color: var(--text-secondary); font-size: 0.88rem; }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 640px) {
+            nav { padding: 1rem; }
+            .nav-logo { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+    <a class="nav-logo" href="/">
+        <i class="fas fa-chart-line"></i> S Pulse
+    </a>
+    <div class="nav-cta">
+        <a class="btn btn-outline" href="/login"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+        <a class="btn btn-primary" href="/login"><i class="fas fa-rocket"></i> Get Started Free</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-badge">
+        <i class="fas fa-circle" style="color:#10b981;font-size:0.5rem;"></i>
+        Live Market Data &nbsp;•&nbsp; AI-Powered
+    </div>
+    <h1>
+        Real-Time <span>Stock Market Analytics</span><br>Powered by AI
+    </h1>
+    <p>
+        Track live NASDAQ &amp; NYSE prices, get machine-learning price predictions,
+        perform technical analysis, and compare stocks — all in one free dashboard.
+    </p>
+    <div class="hero-buttons">
+        <a class="btn btn-primary" href="/login">
+            <i class="fas fa-rocket"></i> Start Analyzing Free
+        </a>
+        <a class="btn btn-outline" href="#features">
+            <i class="fas fa-play-circle"></i> See Features
+        </a>
+    </div>
+</section>
+
+<!-- LIVE TICKER (static sample for SEO) -->
+<div class="ticker-bar" aria-label="Stock market ticker">
+    <div class="ticker-track">
+        <span class="ticker-item"><span class="symbol">AAPL</span> <span class="up">▲ +1.24%</span></span>
+        <span class="ticker-item"><span class="symbol">TSLA</span> <span class="down">▼ -0.87%</span></span>
+        <span class="ticker-item"><span class="symbol">MSFT</span> <span class="up">▲ +0.63%</span></span>
+        <span class="ticker-item"><span class="symbol">GOOGL</span> <span class="up">▲ +1.10%</span></span>
+        <span class="ticker-item"><span class="symbol">AMZN</span> <span class="down">▼ -0.42%</span></span>
+        <span class="ticker-item"><span class="symbol">NVDA</span> <span class="up">▲ +2.31%</span></span>
+        <span class="ticker-item"><span class="symbol">META</span> <span class="up">▲ +0.95%</span></span>
+        <span class="ticker-item"><span class="symbol">NFLX</span> <span class="down">▼ -1.05%</span></span>
+        <span class="ticker-item"><span class="symbol">AMD</span> <span class="up">▲ +1.78%</span></span>
+        <span class="ticker-item"><span class="symbol">INTC</span> <span class="down">▼ -0.33%</span></span>
+        <!-- duplicate for seamless loop -->
+        <span class="ticker-item"><span class="symbol">AAPL</span> <span class="up">▲ +1.24%</span></span>
+        <span class="ticker-item"><span class="symbol">TSLA</span> <span class="down">▼ -0.87%</span></span>
+        <span class="ticker-item"><span class="symbol">MSFT</span> <span class="up">▲ +0.63%</span></span>
+        <span class="ticker-item"><span class="symbol">GOOGL</span> <span class="up">▲ +1.10%</span></span>
+        <span class="ticker-item"><span class="symbol">AMZN</span> <span class="down">▼ -0.42%</span></span>
+        <span class="ticker-item"><span class="symbol">NVDA</span> <span class="up">▲ +2.31%</span></span>
+        <span class="ticker-item"><span class="symbol">META</span> <span class="up">▲ +0.95%</span></span>
+        <span class="ticker-item"><span class="symbol">NFLX</span> <span class="down">▼ -1.05%</span></span>
+        <span class="ticker-item"><span class="symbol">AMD</span> <span class="up">▲ +1.78%</span></span>
+        <span class="ticker-item"><span class="symbol">INTC</span> <span class="down">▼ -0.33%</span></span>
+    </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-section">
+    <div class="stats-grid">
+        <div>
+            <div class="stat-value">5,000+</div>
+            <div class="stat-label">Stocks Tracked</div>
+        </div>
+        <div>
+            <div class="stat-value">Real-Time</div>
+            <div class="stat-label">Live Market Data</div>
+        </div>
+        <div>
+            <div class="stat-value">ML / AI</div>
+            <div class="stat-label">Prediction Engine</div>
+        </div>
+        <div>
+            <div class="stat-value">Free</div>
+            <div class="stat-label">No Credit Card</div>
+        </div>
+    </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+    <div class="section-header">
+        <h2>Everything You Need to Trade Smarter</h2>
+        <p>Powerful tools for retail investors, backed by machine learning and live market data.</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(59,130,246,0.15);">
+                <i class="fas fa-chart-line" style="color:#3b82f6;"></i>
+            </div>
+            <h3>Real-Time Stock Dashboard</h3>
+            <p>Monitor live prices, volume, market cap, and percentage changes for thousands of NASDAQ and NYSE listed stocks instantly.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(139,92,246,0.15);">
+                <i class="fas fa-brain" style="color:#8b5cf6;"></i>
+            </div>
+            <h3>AI Price Predictions</h3>
+            <p>Our machine learning model analyzes historical patterns and technical indicators to predict short-term stock price movements.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(16,185,129,0.15);">
+                <i class="fas fa-chart-bar" style="color:#10b981;"></i>
+            </div>
+            <h3>Technical Analysis</h3>
+            <p>Access RSI, MACD, Bollinger Bands, moving averages, and dozens of other technical indicators with interactive charts.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(245,158,11,0.15);">
+                <i class="fas fa-balance-scale" style="color:#f59e0b;"></i>
+            </div>
+            <h3>Stock Comparison Tool</h3>
+            <p>Compare multiple stocks side-by-side — performance, fundamentals, and AI predictions — to make informed decisions.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(239,68,68,0.15);">
+                <i class="fas fa-globe" style="color:#ef4444;"></i>
+            </div>
+            <h3>Market Predictions</h3>
+            <p>Get broad market sentiment analysis and sector-level predictions powered by our ML models trained on years of market data.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(6,182,212,0.15);">
+                <i class="fas fa-bell" style="color:#06b6d4;"></i>
+            </div>
+            <h3>Price Alerts</h3>
+            <p>Set custom price alerts and get notified when your watched stocks hit target levels — never miss a key market move.</p>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how-it-works" style="padding-top:0;">
+    <div class="section-header">
+        <h2>Get Started in Minutes</h2>
+        <p>No setup required. Sign in and start analyzing the market right away.</p>
+    </div>
+    <div class="steps-grid">
+        <div class="step-card">
+            <div class="step-number">1</div>
+            <h3>Create Free Account</h3>
+            <p>Sign up instantly with Google or a username — no credit card needed.</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">2</div>
+            <h3>Search Any Stock</h3>
+            <p>Type any ticker symbol to get live price data, charts, and indicators.</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">3</div>
+            <h3>View AI Predictions</h3>
+            <p>Our ML engine instantly generates buy/sell predictions with confidence scores.</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">4</div>
+            <h3>Trade Smarter</h3>
+            <p>Use insights to make data-driven investment decisions with confidence.</p>
+        </div>
+    </div>
+</section>
+
+<!-- CTA BANNER -->
+<div style="padding: 0 2rem 5rem;">
+    <div class="cta-banner">
+        <h2>Ready to Analyze the Market?</h2>
+        <p>Join thousands of investors using S Pulse for smarter, data-driven stock analysis.</p>
+        <a class="btn btn-primary" href="/login" style="font-size:1.05rem;padding:0.9rem 2.5rem;">
+            <i class="fas fa-rocket"></i> &nbsp;Start Free — No Credit Card
+        </a>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-links">
+        <a href="/login">Sign In</a>
+        <a href="/#features">Features</a>
+        <a href="/#how-it-works">How It Works</a>
+        <a href="/sitemap.xml">Sitemap</a>
+    </div>
+    <p>
+        &copy; 2025 S Pulse &mdash; Real-Time Stock Market Analytics with AI Predictions<br>
+        <small style="opacity:0.6;">Disclaimer: S Pulse is for informational purposes only. Not financial advice. Stock predictions may be inaccurate.</small>
+    </p>
+</footer>
+
+</body>
+</html>

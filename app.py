@@ -223,6 +223,20 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+# ─────────────────────────────────────────────
+# GOOGLE SEARCH CONSOLE VERIFICATION FILE
+# Set env var GOOGLE_SITE_VERIFICATION_FILE to the
+# content provided by Google (e.g. "google1234abcd.html")
+# ─────────────────────────────────────────────
+@app.route('/google<token>.html')
+def google_verification(token):
+    """Serve Google Search Console HTML verification file."""
+    expected = os.environ.get('GOOGLE_SITE_VERIFICATION_FILE', '')
+    filename = f'google{token}.html'
+    if expected and filename == expected:
+        return f'google-site-verification: {filename}', 200, {'Content-Type': 'text/html'}
+    return '', 404
+
 @app.context_processor
 def inject_user():
     username = session.get('username', '').lower()
@@ -251,7 +265,7 @@ def login():
             session['username'] = username.lower()
             session.permanent = bool(request.form.get('remember'))
             flash(f'Welcome back, {username}!', 'success')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard'))  # /dashboard
         else:
             flash('Invalid username or password. Please try again.', 'error')
     return render_template('login.html')
@@ -328,10 +342,16 @@ def google_callback():
         return redirect(url_for('login'))
 
 # ─────────────────────────────────────────────
-# PAGE ROUTES  (all protected)
+# PAGE ROUTES
 # ─────────────────────────────────────────────
 
 @app.route('/')
+def home():
+    """Public landing page — indexed by Google."""
+    verification = os.environ.get('GOOGLE_SITE_VERIFICATION', '')
+    return render_template('landing.html', google_site_verification=verification)
+
+@app.route('/dashboard')
 @login_required
 def dashboard():
     return render_template('dashboard.html')
@@ -1177,6 +1197,55 @@ def search_stocks(query):
         return jsonify(results)
     except Exception:
         return jsonify([])
+
+
+# ─────────────────────────────────────────────
+# SEO: robots.txt & sitemap.xml
+# ─────────────────────────────────────────────
+@app.route('/robots.txt')
+def robots_txt():
+    """Serve robots.txt for search engine crawling."""
+    content = """User-agent: *
+Allow: /
+Allow: /login
+Disallow: /dashboard
+Disallow: /analysis
+Disallow: /predictions
+Disallow: /compare
+Disallow: /market-predictions
+Disallow: /subscribe
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /logout
+
+Sitemap: https://realtime-spulse.onrender.com/sitemap.xml
+"""
+    return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Dynamically generated XML sitemap — only public pages."""
+    base = 'https://realtime-spulse.onrender.com'
+    pages = [
+        ('/', '1.0', 'daily'),
+        ('/login', '0.5', 'monthly'),
+    ]
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    urls = ''
+    for path, priority, freq in pages:
+        urls += f"""
+  <url>
+    <loc>{base}{path}</loc>
+    <lastmod>{today}</lastmod>
+    <changefreq>{freq}</changefreq>
+    <priority>{priority}</priority>
+  </url>"""
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}
+</urlset>"""
+    return xml, 200, {'Content-Type': 'application/xml; charset=utf-8'}
 
 
 if __name__ == '__main__':
