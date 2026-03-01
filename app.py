@@ -1219,7 +1219,7 @@ Disallow: /api/
 Disallow: /auth/
 Disallow: /logout
 
-Sitemap: https://realtime-spulse.onrender.com/sitemap.xml
+Sitemap: https://real-time-stock-market-analysis-using-ml.onrender.com/sitemap.xml
 """
     return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
@@ -1227,7 +1227,7 @@ Sitemap: https://realtime-spulse.onrender.com/sitemap.xml
 @app.route('/sitemap.xml')
 def sitemap_xml():
     """Dynamically generated XML sitemap — only public pages."""
-    base = 'https://realtime-spulse.onrender.com'
+    base = 'https://real-time-stock-market-analysis-using-ml.onrender.com'
     pages = [
         ('/', '1.0', 'daily'),
         ('/login', '0.5', 'monthly'),
