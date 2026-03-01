@@ -5,6 +5,7 @@ Main Flask Application
 
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, flash
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 from functools import wraps
 import yfinance as yf
 import pandas as pd
@@ -149,7 +150,19 @@ def send_welcome_email(to_email: str, name: str):
 _root = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(_root, 'templates'),
             static_folder=os.path.join(_root, 'static'))
+
+# Trust Render/Vercel reverse proxy so HTTPS URLs and sessions work correctly
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 app.secret_key = os.environ.get('SECRET_KEY', 'realtime-spulse-secret-2026-xK9mP3qR')
+
+# Secure session cookies in production (HTTPS)
+_is_prod = bool(os.environ.get('RENDER') or os.environ.get('VERCEL'))
+app.config['SESSION_COOKIE_SECURE']   = _is_prod
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
 CORS(app)
 
 # ─────────────────────────────────────────────
