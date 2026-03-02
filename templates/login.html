@@ -96,55 +96,90 @@
             100% { transform: translateX(-50%); }
         }
 
-        /* ── Top header bar ── */
-        .top-bar {
+        /* ── Top Nav (matches landing page) ── */
+        .top-nav {
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 3;
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 14px 32px;
-            background: rgba(10, 14, 23, 0.75);
-            border-bottom: 1px solid rgba(59, 130, 246, 0.15);
-            backdrop-filter: blur(8px);
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(10, 14, 23, 0.92);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(12px);
         }
-        .top-bar .logo-icon {
-            width: 36px; height: 36px;
-            border-radius: 10px;
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 1.4rem;
+            font-weight: 800;
             background: var(--gradient-primary);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-            box-shadow: 0 0 18px rgba(59,130,246,0.35);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .top-bar h1 {
-            font-size: 20px; font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .top-bar .badge {
+        .nav-logo svg { flex-shrink: 0; }
+        .nav-logo .nav-ai-pill {
             font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
             padding: 2px 7px; border-radius: 20px;
             background: rgba(59, 130, 246, 0.15);
             border: 1px solid rgba(59, 130, 246, 0.3);
             color: var(--accent-blue);
             text-transform: uppercase;
+            -webkit-text-fill-color: var(--accent-blue);
         }
-        .top-bar .market-status {
-            margin-left: auto;
-            display: flex; align-items: center; gap: 8px;
-            font-size: 12px; color: var(--text-muted);
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .nav-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .nav-btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-primary);
+        }
+        .nav-btn-outline:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .nav-btn-primary {
+            background: var(--gradient-primary);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+        }
+        .nav-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* ── Market status pill ── */
+        .market-pill {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: var(--text-muted);
             font-family: var(--font-mono);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            padding: 4px 10px; border-radius: 20px;
         }
         .status-dot {
-            width: 8px; height: 8px; border-radius: 50%;
+            width: 7px; height: 7px; border-radius: 50%;
             background: var(--accent-green);
-            box-shadow: 0 0 8px var(--accent-green);
+            box-shadow: 0 0 7px var(--accent-green);
             animation: pulse 2s infinite;
         }
         .status-dot.closed {
             background: var(--accent-red);
-            box-shadow: 0 0 8px var(--accent-red);
+            box-shadow: 0 0 7px var(--accent-red);
         }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -468,17 +503,22 @@
         <div class="fc-chg down">▼ -0.44%</div>
     </div>
 
-    <!-- Top bar -->
-    <div class="top-bar">
-        <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg></div>
-        <h1>S Pulse</h1>
-        <span class="badge">AI</span>
-        <div class="market-status">
-            <div class="status-dot"></div>
-            <span>Market Open</span>
-            <span style="margin-left:8px;opacity:0.5;" id="liveClock"></span>
+    <!-- Top Nav (matches landing page style) -->
+    <nav class="top-nav">
+        <a href="/" class="nav-logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>
+            S Pulse
+            <span class="nav-ai-pill">AI</span>
+        </a>
+        <div class="nav-right">
+            <div class="market-pill">
+                <div class="status-dot" id="marketDot"></div>
+                <span id="marketLabel">Market Open</span>
+                <span style="opacity:0.45;" id="liveClock"></span>
+            </div>
+            <a href="/" class="nav-btn nav-btn-outline"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
-    </div>
+    </nav>
 
     <!-- Login card -->
     <div class="login-wrapper">
@@ -630,8 +670,8 @@
             '2025-11-28','2025-12-25',
         ]);
         const isOpen = !isWeekend && !holidays.has(dateStr) && inHours;
-        const dot   = document.querySelector('.market-status .status-dot');
-        const label = document.querySelector('.market-status span');
+        const dot   = document.getElementById('marketDot');
+        const label = document.getElementById('marketLabel');
         if (dot)   dot.className   = isOpen ? 'status-dot' : 'status-dot closed';
         if (label) label.textContent = isOpen ? 'Market Open' : 'Market Closed';
     }
