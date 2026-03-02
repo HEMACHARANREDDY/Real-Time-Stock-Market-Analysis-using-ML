@@ -106,6 +106,29 @@
         }
         .empty-state i { font-size: 1.6rem; margin-bottom: .5rem; opacity: .4; display: block; }
 
+        .snapshot-card {
+            background: rgba(59,130,246,.07);
+            border: 1px solid rgba(59,130,246,.25);
+            border-radius: 14px;
+            padding: 1.3rem 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .snapshot-card i { color: #60a5fa; font-size: 1.3rem; margin-top: .1rem; flex-shrink:0; }
+        .snapshot-card h4 { font-size: .95rem; font-weight: 700; color: var(--text-primary,#f1f5f9); margin-bottom: .3rem; }
+        .snapshot-card p  { font-size: .83rem; color: var(--text-secondary,#94a3b8); line-height:1.55; margin-bottom: .75rem; }
+        .btn-snapshot {
+            display: inline-flex; align-items: center; gap: .45rem;
+            padding: .45rem 1.1rem;
+            background: linear-gradient(135deg,#3b82f6,#8b5cf6);
+            color: #fff; font-size: .85rem; font-weight: 700;
+            border-radius: 8px; text-decoration: none;
+            box-shadow: 0 3px 12px rgba(59,130,246,.3);
+            transition: opacity .2s;
+        }
+        .btn-snapshot:hover { opacity: .85; }
+
         /* Flash */
         .flash-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
         .flash-msg { padding: .7rem 1rem; border-radius: 8px; font-size: .9rem; font-weight: 500; }
@@ -285,6 +308,23 @@
                     No paid subscribers yet.
                 </div>
                 {% endif %}
+            </div>
+
+            <!-- Persistent Data Snapshot -->
+            <div class="snapshot-card">
+                <i class="fas fa-database"></i>
+                <div>
+                    <h4>Make Subscribers Permanent (Render Fix)</h4>
+                    <p>
+                        Render's filesystem resets on every redeploy — subscriber data saved at runtime is lost.
+                        After approving subscribers, <strong>download this snapshot</strong>, replace
+                        <code style="color:#60a5fa;">data/subscriptions.json</code> in your local project,
+                        then <strong>git commit &amp; push</strong> — the file will be seeded on every future deploy automatically.
+                    </p>
+                    <a href="/admin/subscriptions/snapshot" class="btn-snapshot">
+                        <i class="fas fa-download"></i> Download subscriptions.json Snapshot
+                    </a>
+                </div>
             </div>
 
         </div>

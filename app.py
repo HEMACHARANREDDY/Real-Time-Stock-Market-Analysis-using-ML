@@ -191,29 +191,65 @@ SUBSCRIPTION_PLANS = {
     'lifetime': {'label': 'Lifetime', 'price': 5000, 'duration': 'Forever',  'icon': 'fa-infinity'},
 }
 SUBSCRIPTION_PRICE_INR = 250  # default / backward-compat
-# On serverless/read-only filesystems use /tmp, otherwise use local data/
-_is_readonly = os.environ.get('VERCEL') or os.environ.get('RENDER')
-_data_dir = '/tmp' if _is_readonly else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-SUBSCRIPTIONS_FILE = os.path.join(_data_dir, 'subscriptions.json')
+
+# Persistent (committed) data file — always present in the repo
+_repo_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+_REPO_SUBS_FILE = os.path.join(_repo_data_dir, 'subscriptions.json')
+
+# On serverless/read-only deploy (Render/Vercel) also keep a runtime copy in /tmp
+_is_readonly = bool(os.environ.get('VERCEL') or os.environ.get('RENDER'))
+_runtime_dir = '/tmp' if _is_readonly else _repo_data_dir
+SUBSCRIPTIONS_FILE = os.path.join(_runtime_dir, 'subscriptions.json')
 
 
 def _load_subscriptions():
-    """Load subscribed users and pending requests from JSON file."""
-    if os.path.exists(SUBSCRIPTIONS_FILE):
+    """Load subscribed users and pending requests.
+    Always seeds from the committed data/subscriptions.json (survives redeploys),
+    then merges in any runtime additions from /tmp (current session on Render)."""
+    subscribed = {'admin'}
+    pending = []
+
+    # 1. Load committed baseline (repo file — readable even on Render)
+    if os.path.exists(_REPO_SUBS_FILE):
         try:
-            with open(SUBSCRIPTIONS_FILE) as f:
-                data = json.load(f)
-            return set(data.get('subscribed', ['admin'])), data.get('pending', [])
+            with open(_REPO_SUBS_FILE) as f:
+                base = json.load(f)
+            subscribed = set(base.get('subscribed', ['admin']))
+            pending = base.get('pending', [])
         except Exception:
             pass
-    return {'admin'}, []
+
+    # 2. On Render/Vercel also merge runtime /tmp data (approvals made since last deploy)
+    if _is_readonly and os.path.exists(SUBSCRIPTIONS_FILE) and SUBSCRIPTIONS_FILE != _REPO_SUBS_FILE:
+        try:
+            with open(SUBSCRIPTIONS_FILE) as f:
+                runtime = json.load(f)
+            subscribed |= set(runtime.get('subscribed', []))
+            # Merge pending: runtime list takes priority (may have new entries or removals)
+            if runtime.get('pending') is not None:
+                pending = runtime['pending']
+        except Exception:
+            pass
+
+    return subscribed, pending
 
 
 def _save_subscriptions():
-    """Persist subscribed users and pending requests to JSON file."""
+    """Persist subscribed users and pending requests.
+    Writes to the runtime file (/tmp on Render, data/ locally).
+    On local dev also updates the committed repo file so next deploy seeds correctly."""
+    payload = {'subscribed': list(SUBSCRIBED_USERS), 'pending': PENDING_REQUESTS}
+
+    # Always write runtime file
     os.makedirs(os.path.dirname(SUBSCRIPTIONS_FILE), exist_ok=True)
     with open(SUBSCRIPTIONS_FILE, 'w') as f:
-        json.dump({'subscribed': list(SUBSCRIBED_USERS), 'pending': PENDING_REQUESTS}, f, indent=2)
+        json.dump(payload, f, indent=2)
+
+    # On local dev, also update the repo file so pushes carry the latest data
+    if not _is_readonly:
+        os.makedirs(_repo_data_dir, exist_ok=True)
+        with open(_REPO_SUBS_FILE, 'w') as f:
+            json.dump(payload, f, indent=2)
 
 
 # Users who have purchased a subscription (Text Report & future premium features)
@@ -463,6 +499,19 @@ def admin_subscriptions():
                            pending=PENDING_REQUESTS,
                            subscribed=[u for u in SUBSCRIBED_USERS if u != 'admin'],
                            plans=SUBSCRIPTION_PLANS)
+
+
+@app.route('/admin/subscriptions/snapshot')
+@login_required
+def admin_subscriptions_snapshot():
+    """Download current subscriptions as JSON — commit to repo to make persistent."""
+    if session.get('username', '').lower() != 'admin':
+        return '', 403
+    payload = json.dumps({'subscribed': sorted(SUBSCRIBED_USERS), 'pending': PENDING_REQUESTS}, indent=2)
+    return payload, 200, {
+        'Content-Type': 'application/json',
+        'Content-Disposition': 'attachment; filename="subscriptions.json"',
+    }
 
 
 # ─────────────────────────────────────────────
