@@ -185,7 +185,12 @@ USERS = {
     'trader': 'market2026',
 }
 
-SUBSCRIPTION_PRICE_INR = 25
+SUBSCRIPTION_PLANS = {
+    'monthly':  {'label': 'Monthly',  'price': 250,  'duration': '1 Month',  'icon': 'fa-calendar'},
+    'yearly':   {'label': 'Yearly',   'price': 1000, 'duration': '1 Year',   'icon': 'fa-calendar-days'},
+    'lifetime': {'label': 'Lifetime', 'price': 5000, 'duration': 'Forever',  'icon': 'fa-infinity'},
+}
+SUBSCRIPTION_PRICE_INR = 250  # default / backward-compat
 # On serverless/read-only filesystems use /tmp, otherwise use local data/
 _is_readonly = os.environ.get('VERCEL') or os.environ.get('RENDER')
 _data_dir = '/tmp' if _is_readonly else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
@@ -389,12 +394,17 @@ def subscribe():
     # Don't redirect — show premium dashboard instead
     if username in SUBSCRIBED_USERS:
         return render_template('subscribe.html', pending=False,
-                               price=SUBSCRIPTION_PRICE_INR, already_subscribed=True)
+                               plans=SUBSCRIPTION_PLANS, already_subscribed=True)
 
     already_pending = any(p['username'] == username for p in PENDING_REQUESTS)
 
     if request.method == 'POST':
         txn_id = request.form.get('txn_id', '').strip()
+        plan   = request.form.get('plan', 'monthly').strip().lower()
+        if plan not in SUBSCRIPTION_PLANS:
+            plan = 'monthly'
+        plan_info = SUBSCRIPTION_PLANS[plan]
+
         if not txn_id:
             flash('Please enter a valid UPI Transaction ID.', 'error')
         elif already_pending:
@@ -403,7 +413,8 @@ def subscribe():
             PENDING_REQUESTS.append({
                 'username': username,
                 'txn_id': txn_id,
-                'amount': SUBSCRIPTION_PRICE_INR,
+                'plan': plan,
+                'amount': plan_info['price'],
                 'submitted_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'status': 'pending',
             })
@@ -412,7 +423,7 @@ def subscribe():
             flash('Payment submitted! Your subscription will be activated after admin verification.', 'success')
 
     return render_template('subscribe.html', pending=already_pending,
-                           price=SUBSCRIPTION_PRICE_INR, already_subscribed=False)
+                           plans=SUBSCRIPTION_PLANS, already_subscribed=False)
 
 
 @app.route('/admin/subscriptions', methods=['GET', 'POST'])
@@ -451,7 +462,7 @@ def admin_subscriptions():
     return render_template('admin_subscriptions.html',
                            pending=PENDING_REQUESTS,
                            subscribed=[u for u in SUBSCRIBED_USERS if u != 'admin'],
-                           price=SUBSCRIPTION_PRICE_INR)
+                           plans=SUBSCRIPTION_PLANS)
 
 
 # ─────────────────────────────────────────────

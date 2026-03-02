@@ -196,12 +196,13 @@
                     <h3>Pending Payment Requests</h3>
                     <span class="badge badge-orange">{{ pending|length }} pending</span>
                 </div>
-                <div class="price-note">Each subscriber pays <strong>₹{{ price }}</strong> (one-time). Verify transaction ID in your UPI app before approving.</div>
+                <div class="price-note">Plans: {% for k, v in plans.items() %}<strong>{{ v.label }}</strong> ₹{{ v.price }}{% if not loop.last %} &nbsp;·&nbsp; {% endif %}{% endfor %}. Verify transaction ID in your UPI app before approving.</div>
                 {% if pending %}
                 <table class="req-table">
                     <thead>
                         <tr>
                             <th>Username</th>
+                            <th>Plan</th>
                             <th>Transaction ID</th>
                             <th>Amount</th>
                             <th>Submitted</th>
@@ -212,6 +213,7 @@
                         {% for req in pending %}
                         <tr>
                             <td><span class="username-chip"><i class="fas fa-user"></i>{{ req.username }}</span></td>
+                            <td><span class="badge badge-orange" style="text-transform:capitalize;">{{ req.plan | default('monthly') }}</span></td>
                             <td class="mono">{{ req.txn_id }}</td>
                             <td style="color:#f59e0b; font-weight:700;">₹{{ req.amount }}</td>
                             <td style="color:var(--text-secondary, #94a3b8); font-size:.82rem;">{{ req.submitted_at }}</td>

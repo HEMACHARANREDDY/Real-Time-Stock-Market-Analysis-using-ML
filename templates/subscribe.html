@@ -18,6 +18,114 @@
             gap: 1.25rem;
         }
 
+        /* ── Plan Selection Cards ── */
+        .plans-header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .plans-header .price-crown {
+            font-size: 2.8rem;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: .5rem;
+        }
+        .plans-header h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary, #f1f5f9);
+            margin-bottom: .4rem;
+        }
+        .plans-header p {
+            color: var(--text-secondary, #94a3b8);
+            font-size: .9rem;
+            line-height: 1.6;
+        }
+        .plan-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: .9rem;
+        }
+        @media (max-width: 560px) { .plan-cards { grid-template-columns: 1fr; } }
+        .plan-card {
+            background: var(--bg-card, #1a1f2e);
+            border: 2px solid rgba(148,163,184,.15);
+            border-radius: 14px;
+            padding: 1.2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .2s, transform .15s, box-shadow .2s;
+            position: relative;
+            user-select: none;
+        }
+        .plan-card:hover {
+            border-color: rgba(245,158,11,.5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 22px rgba(245,158,11,.12);
+        }
+        .plan-card.selected {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245,158,11,.2), 0 6px 22px rgba(245,158,11,.15);
+        }
+        .plan-card.selected .plan-icon { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
+        .plan-card .plan-badge-popular {
+            position: absolute;
+            top: -.7rem; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: #fff;
+            font-size: .68rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            padding: .18rem .65rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .plan-icon {
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            background: rgba(245,158,11,.12);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            color: #f59e0b;
+            margin: 0 auto .7rem;
+            transition: background .2s, color .2s;
+        }
+        .plan-label {
+            font-size: .8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-secondary, #94a3b8);
+            margin-bottom: .3rem;
+        }
+        .plan-price {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--text-primary, #f1f5f9);
+            line-height: 1;
+        }
+        .plan-price sup { font-size: .75rem; font-weight: 700; vertical-align: super; }
+        .plan-duration {
+            font-size: .75rem;
+            color: var(--text-secondary, #94a3b8);
+            margin-top: .3rem;
+        }
+        .plan-check {
+            position: absolute;
+            top: .6rem; right: .6rem;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: #f59e0b;
+            color: #fff;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: .65rem;
+        }
+        .plan-card.selected .plan-check { display: flex; }
+
         /* ── Price Hero ── */
         .price-hero {
             background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.12));
@@ -579,12 +687,32 @@
             </div>
 
             {% else %}
-            <!-- Price Hero -->
-            <div class="price-hero">
+            <!-- Plans Header -->
+            <div class="plans-header">
                 <div class="price-crown"><i class="fas fa-crown"></i></div>
                 <h2>S Pulse Premium</h2>
-                <p>One-time payment to unlock the full <strong>Text Report</strong> and all upcoming premium features forever.</p>
-                <div class="price-badge"><span>₹</span>{{ price }}<span class="price-one-time">one-time</span></div>
+                <p>Choose a plan and unlock <strong>Text Reports</strong> &amp; all premium features.</p>
+            </div>
+
+            <!-- Plan Selection Cards -->
+            <div class="features-card" style="padding:1.4rem 1.6rem;">
+                <h3>Choose Your Plan</h3>
+                <div class="plan-cards">
+                    {% for plan_key, plan_val in plans.items() %}
+                    <div class="plan-card {% if loop.first %}selected{% endif %}"
+                         id="planCard-{{ plan_key }}"
+                         onclick="selectPlan('{{ plan_key }}', {{ plan_val.price }}, '{{ plan_val.duration }}')">
+                        {% if plan_key == 'yearly' %}
+                        <div class="plan-badge-popular">Best Value</div>
+                        {% endif %}
+                        <div class="plan-check"><i class="fas fa-check"></i></div>
+                        <div class="plan-icon"><i class="fas {{ plan_val.icon }}"></i></div>
+                        <div class="plan-label">{{ plan_val.label }}</div>
+                        <div class="plan-price"><sup>₹</sup>{{ plan_val.price }}</div>
+                        <div class="plan-duration">{{ plan_val.duration }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
 
             <!-- Features -->
@@ -616,7 +744,7 @@
                 <h3>How to Pay</h3>
                 <div class="step-row">
                     <div class="step-num">1</div>
-                    <div class="step-text">Open any UPI app (GPay, PhonePe, Paytm, etc.) and send <strong>₹{{ price }}</strong> to the UPI ID below.</div>
+                    <div class="step-text">Open any UPI app (GPay, PhonePe, Paytm, etc.) and send <strong>₹<span id="upiAmount">{{ plans.monthly.price }}</span></strong> to the UPI ID below.</div>
                 </div>
                 <div class="upi-box">
                     <div class="upi-row">
@@ -627,7 +755,7 @@
                     </div>
                     <div class="upi-row">
                         <i class="fas fa-indian-rupee-sign"></i>
-                        <span>Amount: <strong style="color:#f59e0b;">₹{{ price }}</strong></span>
+                        <span>Amount: <strong style="color:#f59e0b;">₹<span id="upiAmountBox">{{ plans.monthly.price }}</span></strong></span>
                     </div>
                     <div class="upi-row">
                         <i class="fas fa-user"></i>
@@ -648,6 +776,7 @@
             <div class="txn-form-card">
                 <h3>Submit Your Payment</h3>
                 <form method="POST" action="/subscribe">
+                    <input type="hidden" name="plan" id="selectedPlanInput" value="monthly">
                     <div class="form-field">
                         <label>UPI Transaction ID</label>
                         <input type="text" name="txn_id" placeholder="e.g. 412345678901"
@@ -657,7 +786,7 @@
                     <div class="form-field" style="flex-direction:row; align-items:center; gap:.5rem; margin-bottom:1.2rem;">
                         <input type="checkbox" id="confirmPay" required style="width:auto; accent-color:#f59e0b;">
                         <label for="confirmPay" style="text-transform:none; letter-spacing:0; font-size:.85rem; cursor:pointer;">
-                            I confirm I have paid <strong>₹{{ price }}</strong> to the UPI ID above.
+                            I confirm I have paid <strong>₹<span id="confirmAmount">{{ plans.monthly.price }}</span></strong> to the UPI ID above.
                         </label>
                     </div>
                     <button type="submit" class="btn-pay">
@@ -681,6 +810,21 @@
                 showToast('UPI ID copied!', 'success');
             }).catch(() => {
                 showToast('Copy failed — please copy manually', 'error');
+            });
+        }
+        function selectPlan(planKey, price, duration) {
+            // Deselect all cards
+            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+            // Select chosen card
+            const card = document.getElementById('planCard-' + planKey);
+            if (card) card.classList.add('selected');
+            // Update hidden input
+            const planInput = document.getElementById('selectedPlanInput');
+            if (planInput) planInput.value = planKey;
+            // Update price spans
+            ['upiAmount', 'upiAmountBox', 'confirmAmount'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = price;
             });
         }
     </script>
