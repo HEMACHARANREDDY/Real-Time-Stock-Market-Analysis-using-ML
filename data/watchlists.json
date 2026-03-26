@@ -1,0 +1,15 @@
+{
+  "hemacharan499": {
+    "stocks": [
+      "AAPL"
+    ],
+    "portfolio": [
+      {
+        "symbol": "AAPL",
+        "buy_price": 10000.0,
+        "quantity": 1,
+        "date": "2026-03-02"
+      }
+    ]
+  }
+}

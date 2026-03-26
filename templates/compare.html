@@ -147,13 +147,16 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <h2 class="page-title">Compare Stocks</h2>
-                <span class="page-subtitle" id="currentDate"></span>
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h2 class="page-title">Compare Stocks</h2>
+                    <span class="page-subtitle" id="currentDate"></span>
+                </div>
             </div>
             <div class="topbar-right">
                 {% if not is_subscribed %}
                 <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                    <i class="fas fa-crown"></i> Go Pro
                 </a>
                 {% endif %}
                 {% if current_user == 'admin' %}
@@ -164,7 +167,9 @@
                     <i class="fas fa-shield-halved"></i> Admin
                 </a>
                 {% endif %}
-                <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                <div class="topbar-actions">
+                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                </div>
             </div>
         </header>
 
@@ -178,9 +183,9 @@
             <p class="gate-sub">
                 <strong>Compare Stocks</strong> lets you pit up to 5 stocks head-to-head with
                 performance charts, metrics, text reports and download — all in one place.
-                Unlock it with a one-time ₹25 payment.
+                Unlock it by subscribing to Pro.
             </p>
-            <div class="gate-price-badge">₹25<small>one-time &middot; lifetime access</small></div>
+            <div class="gate-price-badge">Pro<small>lifetime access</small></div>
             <div class="gate-features-grid">
                 <div class="gate-feature-item"><i class="fas fa-chart-line"></i> Normalized performance chart</div>
                 <div class="gate-feature-item"><i class="fas fa-table"></i> Side-by-side metrics table</div>
@@ -191,7 +196,7 @@
             </div>
             <div class="gate-actions">
                 <a href="/subscribe" class="btn-gate-buy">
-                    <i class="fas fa-crown"></i> Subscribe for ₹25
+                    <i class="fas fa-crown"></i> Go Pro
                 </a>
             </div>
         </div>
@@ -234,48 +239,48 @@
                 <div class="suggestion-groups">
                     <div class="suggestion-group">
                         <span class="sg-label">Tech</span>
-                        <button class="sug-chip" data-sym="AAPL">AAPL</button>
-                        <button class="sug-chip" data-sym="MSFT">MSFT</button>
-                        <button class="sug-chip" data-sym="GOOGL">GOOGL</button>
-                        <button class="sug-chip" data-sym="AMZN">AMZN</button>
-                        <button class="sug-chip" data-sym="NVDA">NVDA</button>
-                        <button class="sug-chip" data-sym="META">META</button>
-                        <button class="sug-chip" data-sym="TSLA">TSLA</button>
-                        <button class="sug-chip" data-sym="AMD">AMD</button>
-                        <button class="sug-chip" data-sym="INTC">INTC</button>
-                        <button class="sug-chip" data-sym="ORCL">ORCL</button>
+                        <button class="sug-chip" data-sym="AAPL" title="Apple Inc.">AAPL</button>
+                        <button class="sug-chip" data-sym="MSFT" title="Microsoft Corporation">MSFT</button>
+                        <button class="sug-chip" data-sym="GOOGL" title="Alphabet Inc. (Google)">GOOGL</button>
+                        <button class="sug-chip" data-sym="AMZN" title="Amazon.com Inc.">AMZN</button>
+                        <button class="sug-chip" data-sym="NVDA" title="NVIDIA Corporation">NVDA</button>
+                        <button class="sug-chip" data-sym="META" title="Meta Platforms Inc. (Facebook)">META</button>
+                        <button class="sug-chip" data-sym="TSLA" title="Tesla Inc.">TSLA</button>
+                        <button class="sug-chip" data-sym="AMD" title="Advanced Micro Devices Inc.">AMD</button>
+                        <button class="sug-chip" data-sym="INTC" title="Intel Corporation">INTC</button>
+                        <button class="sug-chip" data-sym="ORCL" title="Oracle Corporation">ORCL</button>
                     </div>
                     <div class="suggestion-group">
                         <span class="sg-label">Finance</span>
-                        <button class="sug-chip" data-sym="JPM">JPM</button>
-                        <button class="sug-chip" data-sym="GS">GS</button>
-                        <button class="sug-chip" data-sym="BAC">BAC</button>
-                        <button class="sug-chip" data-sym="V">V</button>
-                        <button class="sug-chip" data-sym="MA">MA</button>
-                        <button class="sug-chip" data-sym="WFC">WFC</button>
+                        <button class="sug-chip" data-sym="JPM" title="JPMorgan Chase & Co.">JPM</button>
+                        <button class="sug-chip" data-sym="GS" title="Goldman Sachs Group Inc.">GS</button>
+                        <button class="sug-chip" data-sym="BAC" title="Bank of America Corporation">BAC</button>
+                        <button class="sug-chip" data-sym="V" title="Visa Inc.">V</button>
+                        <button class="sug-chip" data-sym="MA" title="Mastercard Incorporated">MA</button>
+                        <button class="sug-chip" data-sym="WFC" title="Wells Fargo & Company">WFC</button>
                     </div>
                     <div class="suggestion-group">
                         <span class="sg-label">Healthcare</span>
-                        <button class="sug-chip" data-sym="JNJ">JNJ</button>
-                        <button class="sug-chip" data-sym="PFE">PFE</button>
-                        <button class="sug-chip" data-sym="UNH">UNH</button>
-                        <button class="sug-chip" data-sym="ABBV">ABBV</button>
-                        <button class="sug-chip" data-sym="MRK">MRK</button>
+                        <button class="sug-chip" data-sym="JNJ" title="Johnson & Johnson">JNJ</button>
+                        <button class="sug-chip" data-sym="PFE" title="Pfizer Inc.">PFE</button>
+                        <button class="sug-chip" data-sym="UNH" title="UnitedHealth Group Inc.">UNH</button>
+                        <button class="sug-chip" data-sym="ABBV" title="AbbVie Inc.">ABBV</button>
+                        <button class="sug-chip" data-sym="MRK" title="Merck & Co. Inc.">MRK</button>
                     </div>
                     <div class="suggestion-group">
                         <span class="sg-label">Energy</span>
-                        <button class="sug-chip" data-sym="XOM">XOM</button>
-                        <button class="sug-chip" data-sym="CVX">CVX</button>
-                        <button class="sug-chip" data-sym="COP">COP</button>
+                        <button class="sug-chip" data-sym="XOM" title="Exxon Mobil Corporation">XOM</button>
+                        <button class="sug-chip" data-sym="CVX" title="Chevron Corporation">CVX</button>
+                        <button class="sug-chip" data-sym="COP" title="ConocoPhillips">COP</button>
                     </div>
                     <div class="suggestion-group">
                         <span class="sg-label">India (NSE)</span>
-                        <button class="sug-chip" data-sym="RELIANCE.NS">RELIANCE</button>
-                        <button class="sug-chip" data-sym="TCS.NS">TCS</button>
-                        <button class="sug-chip" data-sym="INFY.NS">INFY</button>
-                        <button class="sug-chip" data-sym="HDFCBANK.NS">HDFC Bank</button>
-                        <button class="sug-chip" data-sym="WIPRO.NS">WIPRO</button>
-                        <button class="sug-chip" data-sym="TATAMOTORS.NS">TATA Motors</button>
+                        <button class="sug-chip" data-sym="RELIANCE.NS" title="Reliance Industries Limited">RELIANCE</button>
+                        <button class="sug-chip" data-sym="TCS.NS" title="Tata Consultancy Services">TCS</button>
+                        <button class="sug-chip" data-sym="INFY.NS" title="Infosys Limited">INFY</button>
+                        <button class="sug-chip" data-sym="HDFCBANK.NS" title="HDFC Bank Limited">HDFC Bank</button>
+                        <button class="sug-chip" data-sym="WIPRO.NS" title="Wipro Limited">WIPRO</button>
+                        <button class="sug-chip" data-sym="TATAMOTORS.NS" title="Tata Motors Limited">TATA Motors</button>
                     </div>
                 </div>
             </div>
@@ -463,6 +468,16 @@
 
             <!-- ── GRAPH VIEW ── -->
             <div id="graphView">
+                <!-- Chart Type -->
+                <div style="margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;">
+                    <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;">Chart Type:</label>
+                    <select id="compareChartType" class="form-input" style="min-width:160px;" onchange="switchCompareChartType(this.value)">
+                        <option value="line" selected>📈  Line Chart</option>
+                        <option value="area">🌊  Area Chart</option>
+                        <option value="bar">📊  Bar Chart</option>
+                    </select>
+                </div>
+
                 <!-- Summary Cards -->
                 <div class="compare-summary" id="compareSummary"></div>
 

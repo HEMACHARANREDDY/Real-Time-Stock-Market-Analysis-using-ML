@@ -70,16 +70,21 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <h2 class="page-title"><i class="fas fa-globe" style="color:var(--accent-blue);margin-right:0.5rem;"></i>Market-Wide Predictions</h2>
-                <span class="page-subtitle" id="currentDate"></span>
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h2 class="page-title"><i class="fas fa-globe" style="color:var(--accent-blue);margin-right:0.5rem;"></i>Market-Wide Predictions</h2>
+                    <span class="page-subtitle" id="currentDate"></span>
+                </div>
             </div>
             <div class="topbar-right">
                 {% if not is_subscribed %}
                 <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                    <i class="fas fa-crown"></i> Go Pro
                 </a>
                 {% endif %}
-                <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                <div class="topbar-actions">
+                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                </div>
             </div>
         </header>
 
@@ -171,6 +176,15 @@
             </div>
 
             <!-- Signal Distribution Chart -->
+            <div style="margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;">
+                <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;">Chart Type:</label>
+                <select id="marketChartType" class="form-input" style="min-width:160px;" onchange="switchMarketChartType(this.value)">
+                    <option value="default" selected>📊  Default View</option>
+                    <option value="bar">📊  Bar Chart</option>
+                    <option value="doughnut">🍩  Doughnut Chart</option>
+                    <option value="radar">🎯  Radar Chart</option>
+                </select>
+            </div>
             <div class="content-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1.5rem;">
                 <div class="glass-card">
                     <div class="card-header"><h3><i class="fas fa-chart-pie"></i> Signal Distribution</h3></div>

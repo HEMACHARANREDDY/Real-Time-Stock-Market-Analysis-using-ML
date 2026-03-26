@@ -4,18 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <title>Login - S Pulse Stock Market Analytics</title>
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="Sign in to S Pulse for AI-powered stock predictions, real-time market analytics, and personalized stock alerts.">
+    <title>Create Account - S Pulse Stock Market Analytics</title>
+    <meta name="description" content="Create your S Pulse account for AI-powered stock predictions, real-time market analytics, and personalized alerts.">
     <meta name="robots" content="noindex, follow">
     <meta name="google-site-verification" content="uDZoJ0_e90Ye5iG-MVQXdlioq50Ebm9PrpO-YWN8Cn8" />
-    <link rel="canonical" href="https://real-time-stock-market-analysis-using-ml.onrender.com/login">
-    <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://real-time-stock-market-analysis-using-ml.onrender.com/login">
-    <meta property="og:title" content="Login - S Pulse Stock Market Analytics">
-    <meta property="og:description" content="Sign in to S Pulse for AI-powered stock predictions and real-time market analytics.">
-    <meta property="og:site_name" content="S Pulse">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -47,7 +39,7 @@
             font-family: var(--font-sans);
             background: var(--bg-primary);
             color: var(--text-primary);
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
         /* ── Background Canvas ── */
@@ -96,322 +88,209 @@
             100% { transform: translateX(-50%); }
         }
 
-        /* ── Top Nav (matches landing page) ── */
+        /* ── Top Nav ── */
         .top-nav {
             position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 3;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 1rem 2rem;
-            background: rgba(10, 14, 23, 0.92);
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            align-items: center;
+            padding: 14px 32px;
+            background: rgba(10, 14, 23, 0.7);
             backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.08);
         }
         .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            font-size: 1.4rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 1.25rem; font-weight: 800; color: #fff;
+            text-decoration: none; letter-spacing: -0.5px;
         }
-        .nav-logo svg { flex-shrink: 0; }
-        .nav-logo .nav-ai-pill {
-            font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
-            padding: 2px 7px; border-radius: 20px;
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: var(--accent-blue);
+        .nav-ai-pill {
+            font-size: 0.6rem; padding: 2px 7px;
+            border-radius: 6px; background: var(--gradient-primary);
+            color: #fff; font-weight: 700;
             text-transform: uppercase;
-            -webkit-text-fill-color: var(--accent-blue);
+            letter-spacing: 0.5px;
         }
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .nav-btn {
-            padding: 0.5rem 1.2rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.88rem;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: none;
-        }
-        .nav-btn-outline {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.2);
-            color: var(--text-primary);
-        }
-        .nav-btn-outline:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-        .nav-btn-primary {
-            background: var(--gradient-primary);
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(59,130,246,0.3);
-        }
-        .nav-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* ── Market status pill ── */
+        .nav-right { display: flex; align-items: center; gap: 12px; }
         .market-pill {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 11px; color: var(--text-muted);
-            font-family: var(--font-mono);
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
-            padding: 4px 10px; border-radius: 20px;
+            display: inline-flex; align-items: center; gap: 7px;
+            background: rgba(255,255,255,0.04); border-radius: 20px;
+            padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary);
         }
         .status-dot {
             width: 7px; height: 7px; border-radius: 50%;
             background: var(--accent-green);
-            box-shadow: 0 0 7px var(--accent-green);
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 6px var(--accent-green);
+            animation: blink 1.5s infinite;
         }
-        .status-dot.closed {
-            background: var(--accent-red);
-            box-shadow: 0 0 7px var(--accent-red);
+        .status-dot.closed { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); animation: none; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+        .nav-btn {
+            padding: 7px 18px; border-radius: 8px; font-size: 0.82rem;
+            font-weight: 600; text-decoration: none;
+            transition: all 0.2s ease;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.4; }
+        .nav-btn-primary {
+            background: var(--gradient-primary); color: #fff;
         }
+        .nav-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        /* ── Login Container ── */
-        .login-wrapper {
-            position: relative; z-index: 10;
+        /* ── Register Card ── */
+        .register-wrapper {
+            position: relative;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
             min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            padding: 80px 20px 60px;
+            padding: 90px 16px 80px;
         }
-        .login-card {
-            width: 100%; max-width: 440px;
-            background: rgba(26, 31, 46, 0.92);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 20px;
-            padding: 44px 40px 36px;
-            box-shadow: var(--shadow-lg), 0 0 60px rgba(59, 130, 246, 0.08);
+        .register-card {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(26, 31, 46, 0.85);
             backdrop-filter: blur(20px);
-            animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(59, 130, 246, 0.12);
+            border-radius: 20px;
+            padding: 36px 36px 32px;
+            box-shadow: var(--shadow-lg), 0 0 80px rgba(59, 130, 246, 0.06);
+            animation: cardFadeIn 0.6s ease-out;
         }
-        @keyframes cardIn {
+        @keyframes cardFadeIn {
             from { opacity: 0; transform: translateY(28px) scale(0.97); }
             to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-
-        .card-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
+        .card-header { text-align: center; margin-bottom: 28px; }
         .card-logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            margin-bottom: 20px;
         }
         .card-logo-icon {
-            width: 58px; height: 58px;
-            border-radius: 16px;
+            width: 48px; height: 48px; border-radius: 14px;
             background: var(--gradient-primary);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.45);
-            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
         }
-        .card-logo-text {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 3px;
-        }
-        .card-logo-name {
-            font-size: 22px;
-            font-weight: 900;
-            letter-spacing: -0.5px;
+        .card-logo-text { text-align: left; }
+        .card-logo-name { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.3px; }
+        .card-logo-sub { font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .ai-pill {
+            font-size: 0.55rem; padding: 1px 6px; border-radius: 4px;
             background: var(--gradient-primary);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-            line-height: 1;
-        }
-        .card-logo-sub {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-        }
-        .card-logo-sub .ai-pill {
-            background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(139,92,246,0.25));
-            border: 1px solid rgba(139,92,246,0.35);
-            color: #a78bfa;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 1px 7px;
-            border-radius: 20px;
-            letter-spacing: 1px;
+            color: #fff; font-weight: 700; text-transform: uppercase;
         }
         .card-title {
-            font-size: 24px; font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
+            font-size: 1.45rem; font-weight: 700; margin-bottom: 6px;
         }
-        .card-subtitle {
-            font-size: 13px; color: var(--text-muted);
-        }
+        .card-subtitle { font-size: 0.85rem; color: var(--text-secondary); }
 
         /* ── Flash Messages ── */
         .flash-msg {
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 13px;
-            margin-bottom: 20px;
             display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; border-radius: 10px;
+            margin-bottom: 18px; font-size: 0.82rem;
             animation: fadeIn 0.3s ease;
         }
-        .flash-msg.error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #fca5a5;
-        }
-        .flash-msg.success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.25);
-            color: #6ee7b7;
-        }
+        .flash-msg.error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
+        .flash-msg.success { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
         /* ── Form ── */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
         .form-label {
             display: block;
-            font-size: 13px; font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
             color: var(--text-secondary);
-            margin-bottom: 8px;
+            letter-spacing: 0.3px;
         }
-        .input-wrapper {
-            position: relative;
-        }
+        .input-wrapper { position: relative; }
         .input-icon {
             position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 14px; pointer-events: none;
+            font-size: 14px; color: var(--text-muted);
             transition: color 0.2s;
         }
         .form-input {
             width: 100%;
-            padding: 13px 14px 13px 42px;
+            padding: 12px 14px 12px 42px;
             background: var(--bg-input);
             border: 1px solid var(--border-color);
             border-radius: 10px;
             color: var(--text-primary);
             font-family: var(--font-sans);
-            font-size: 14px;
+            font-size: 0.88rem;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            transition: border-color 0.25s, box-shadow 0.25s;
         }
         .form-input:focus {
             border-color: var(--border-highlight);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
-            background: #222a3f;
         }
         .form-input:focus + .input-icon,
-        .input-wrapper:focus-within .input-icon {
-            color: var(--accent-blue);
-        }
-        .input-wrapper .eye-btn {
+        .form-input:focus ~ .input-icon { color: var(--accent-blue); }
+
+        .eye-btn {
             position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; cursor: pointer;
-            color: var(--text-muted); font-size: 14px;
-            transition: color 0.2s;
-            padding: 4px;
-        }
-        .input-wrapper .eye-btn:hover { color: var(--accent-blue); }
-
-        .form-options {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 24px;
-        }
-        .remember-me {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 13px; color: var(--text-muted); cursor: pointer;
-            user-select: none;
-        }
-        .remember-me input[type="checkbox"] {
-            width: 15px; height: 15px; accent-color: var(--accent-blue); cursor: pointer;
-        }
-        .forgot-link {
-            font-size: 13px; color: var(--accent-blue);
-            text-decoration: none; font-weight: 500;
+            background: none; border: none;
+            color: var(--text-muted); cursor: pointer;
+            font-size: 14px; padding: 4px;
             transition: color 0.2s;
         }
-        .forgot-link:hover { color: var(--accent-purple); }
+        .eye-btn:hover { color: var(--text-primary); }
 
-        .btn-login {
+        /* ── Password strength ── */
+        .pw-strength {
+            display: flex; gap: 4px; margin-top: 8px;
+        }
+        .pw-bar {
+            flex: 1; height: 3px; border-radius: 2px;
+            background: rgba(148, 163, 184, 0.15);
+            transition: background 0.3s;
+        }
+        .pw-bar.active.weak { background: var(--accent-red); }
+        .pw-bar.active.medium { background: #f59e0b; }
+        .pw-bar.active.strong { background: var(--accent-green); }
+        .pw-strength-label {
+            font-size: 0.7rem; margin-top: 4px;
+            color: var(--text-muted);
+        }
+
+        /* ── Submit button ── */
+        .btn-register {
             width: 100%;
-            padding: 14px;
+            padding: 13px;
+            margin-top: 6px;
             background: var(--gradient-primary);
-            border: none;
-            border-radius: 10px;
-            color: #fff;
-            font-family: var(--font-sans);
-            font-size: 15px; font-weight: 700;
-            cursor: pointer;
+            border: none; border-radius: 12px;
+            color: #fff; font-size: 0.95rem;
+            font-weight: 700; cursor: pointer;
+            position: relative;
             transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35);
-            letter-spacing: 0.3px;
         }
-        .btn-login:hover {
-            opacity: 0.92;
+        .btn-register:hover {
+            box-shadow: 0 4px 24px rgba(59, 130, 246, 0.35);
             transform: translateY(-1px);
-            box-shadow: 0 6px 28px rgba(59, 130, 246, 0.5);
         }
-        .btn-login:active { transform: translateY(0); }
+        .btn-register:active { transform: translateY(0); }
 
-        /* Google button */
-        .btn-google {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            padding: 0.75rem;
-            background: #fff;
-            color: #3c4043;
-            font-weight: 600;
-            font-size: 0.95rem;
-            border: 1px solid #dadce0;
-            border-radius: 10px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.2s, box-shadow 0.2s;
-            margin-bottom: 0.25rem;
-        }
-        .btn-google:hover {
-            background: #f8f9fa;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        .btn-login .btn-spinner {
+        .btn-spinner {
             display: none;
-            width: 16px; height: 16px;
-            border: 2px solid rgba(255,255,255,0.4);
+            width: 18px; height: 18px;
+            border: 2.5px solid rgba(255,255,255,0.3);
             border-top-color: #fff;
             border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin-right: 8px;
+            animation: spin 0.6s linear infinite;
+            position: absolute;
+            left: 50%; top: 50%;
+            margin: -9px 0 0 -9px;
         }
-        .btn-login.loading .btn-spinner { display: inline-block; }
-        .btn-login.loading .btn-text { opacity: 0.7; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .divider {
@@ -424,6 +303,22 @@
             height: 1px; background: var(--border-color);
         }
 
+        .btn-google {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.88rem; font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-google:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+        }
+
         .card-footer {
             text-align: center;
             margin-top: 24px;
@@ -431,7 +326,7 @@
         }
         .card-footer a { color: var(--accent-blue); text-decoration: none; }
 
-        /* ── Floating stock cards in background ── */
+        /* ── Floating stock cards ── */
         .float-card {
             position: fixed; z-index: 1;
             background: rgba(26, 31, 46, 0.75);
@@ -461,14 +356,14 @@
         }
 
         @media (max-width: 500px) {
-            .login-card { padding: 32px 22px 28px; }
+            .register-card { padding: 32px 22px 28px; }
             .float-card { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Canvas background: animated stock charts -->
+    <!-- Canvas background -->
     <canvas id="bgCanvas"></canvas>
 
     <!-- Floating stock price cards -->
@@ -503,7 +398,7 @@
         <div class="fc-chg down">▼ -0.44%</div>
     </div>
 
-    <!-- Top Nav (matches landing page style) -->
+    <!-- Top Nav -->
     <nav class="top-nav">
         <a href="/" class="nav-logo">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>
@@ -519,9 +414,9 @@
         </div>
     </nav>
 
-    <!-- Login card -->
-    <div class="login-wrapper">
-        <div class="login-card">
+    <!-- Register card -->
+    <div class="register-wrapper">
+        <div class="register-card">
             <div class="card-header">
                 <div class="card-logo">
                     <div class="card-logo-icon">
@@ -538,8 +433,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-title">Welcome Back</div>
-                <div class="card-subtitle">Sign in to your Realtime S Pulse dashboard</div>
+                <div class="card-title">Create Account</div>
+                <div class="card-subtitle">Join Realtime S Pulse for AI-powered stock analytics</div>
             </div>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -553,18 +448,50 @@
               {% endif %}
             {% endwith %}
 
-            <form method="POST" action="/login" id="loginForm">
+            <form method="POST" action="/register" id="registerForm">
                 <div class="form-group">
-                    <label class="form-label" for="username">Username</label>
+                    <label class="form-label" for="fullname">Full Name</label>
                     <div class="input-wrapper">
                         <i class="fas fa-user input-icon"></i>
                         <input
                             class="form-input"
                             type="text"
+                            id="fullname"
+                            name="fullname"
+                            placeholder="Enter your full name"
+                            required
+                            autocomplete="name"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input
+                            class="form-input"
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-at input-icon"></i>
+                        <input
+                            class="form-input"
+                            type="text"
                             id="username"
                             name="username"
-                            placeholder="Enter your username"
+                            placeholder="Choose a username"
                             required
+                            minlength="3"
                             autocomplete="username"
                         >
                     </div>
@@ -579,27 +506,44 @@
                             type="password"
                             id="password"
                             name="password"
-                            placeholder="Enter your password"
+                            placeholder="Create a password (min 6 chars)"
                             required
-                            autocomplete="current-password"
+                            minlength="6"
+                            autocomplete="new-password"
                         >
                         <button type="button" class="eye-btn" id="eyeBtn" title="Toggle password">
                             <i class="fas fa-eye" id="eyeIcon"></i>
                         </button>
                     </div>
+                    <div class="pw-strength">
+                        <div class="pw-bar" id="pwBar1"></div>
+                        <div class="pw-bar" id="pwBar2"></div>
+                        <div class="pw-bar" id="pwBar3"></div>
+                        <div class="pw-bar" id="pwBar4"></div>
+                    </div>
+                    <div class="pw-strength-label" id="pwLabel"></div>
                 </div>
 
-                <div class="form-options">
-                    <label class="remember-me">
-                        <input type="checkbox" name="remember" id="rememberMe">
-                        Remember me
-                    </label>
-                    <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+                <div class="form-group">
+                    <label class="form-label" for="confirm_password">Confirm Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-shield-halved input-icon"></i>
+                        <input
+                            class="form-input"
+                            type="password"
+                            id="confirm_password"
+                            name="confirm_password"
+                            placeholder="Re-enter your password"
+                            required
+                            minlength="6"
+                            autocomplete="new-password"
+                        >
+                    </div>
                 </div>
 
-                <button type="submit" class="btn-login" id="loginBtn">
+                <button type="submit" class="btn-register" id="registerBtn">
                     <span class="btn-spinner" id="btnSpinner"></span>
-                    <span class="btn-text">Sign In to Dashboard</span>
+                    <span class="btn-text">Create Account</span>
                 </button>
             </form>
 
@@ -611,7 +555,7 @@
             </a>
 
             <div class="card-footer">
-                Don't have an account? <a href="/register">Create one now</a>
+                Already have an account? <a href="/login">Sign in</a>
                 <div style="margin-top:8px;opacity:0.65;">Real-time market data powered by Yahoo Finance &bull; AI by Realtime S Pulse</div>
             </div>
         </div>
@@ -645,8 +589,53 @@
         }
     });
 
+    // ── Password strength meter ──
+    document.getElementById('password').addEventListener('input', function () {
+        const pw = this.value;
+        let score = 0;
+        if (pw.length >= 6) score++;
+        if (pw.length >= 10) score++;
+        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+
+        const levels = ['', 'weak', 'medium', 'medium', 'strong'];
+        const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+        const bars = [document.getElementById('pwBar1'), document.getElementById('pwBar2'),
+                      document.getElementById('pwBar3'), document.getElementById('pwBar4')];
+        const label = document.getElementById('pwLabel');
+
+        bars.forEach((b, i) => {
+            b.className = 'pw-bar';
+            if (i < score) {
+                b.classList.add('active', levels[score]);
+            }
+        });
+        label.textContent = pw.length > 0 ? labels[score] : '';
+        label.style.color = score <= 1 ? 'var(--accent-red)' : score <= 2 ? '#f59e0b' : 'var(--accent-green)';
+    });
+
+    // ── Confirm password match check ──
+    document.getElementById('confirm_password').addEventListener('input', function () {
+        const pw = document.getElementById('password').value;
+        if (this.value && this.value !== pw) {
+            this.style.borderColor = 'var(--accent-red)';
+        } else if (this.value && this.value === pw) {
+            this.style.borderColor = 'var(--accent-green)';
+        } else {
+            this.style.borderColor = '';
+        }
+    });
+
+    // ── Form submit spinner ──
+    document.getElementById('registerForm').addEventListener('submit', function () {
+        const btn = document.getElementById('registerBtn');
+        btn.querySelector('.btn-text').style.opacity = '0';
+        btn.querySelector('.btn-spinner').style.display = 'block';
+        btn.disabled = true;
+    });
+
     // ── Market Status ──
-    function updateLoginMarketStatus() {
+    function updateMarketStatus() {
         const now = new Date();
         const etParts = new Intl.DateTimeFormat('en-US', {
             timeZone: 'America/New_York',
@@ -665,9 +654,6 @@
             '2026-01-01','2026-01-19','2026-02-16','2026-04-03',
             '2026-05-25','2026-07-03','2026-09-07','2026-11-26',
             '2026-11-27','2026-12-25',
-            '2025-01-01','2025-01-20','2025-02-17','2025-04-18',
-            '2025-05-26','2025-07-04','2025-09-01','2025-11-27',
-            '2025-11-28','2025-12-25',
         ]);
         const isOpen = !isWeekend && !holidays.has(dateStr) && inHours;
         const dot   = document.getElementById('marketDot');
@@ -675,109 +661,75 @@
         if (dot)   dot.className   = isOpen ? 'status-dot' : 'status-dot closed';
         if (label) label.textContent = isOpen ? 'Market Open' : 'Market Closed';
     }
-    updateLoginMarketStatus();
-    setInterval(updateLoginMarketStatus, 60000);
-
-    // ── Login spinner ──
-    document.getElementById('loginForm').addEventListener('submit', function () {
-        const btn = document.getElementById('loginBtn');
-        btn.classList.add('loading');
-    });
+    updateMarketStatus();
+    setInterval(updateMarketStatus, 60000);
 
     // ── Ticker tape ──
-    const tickers = [
-        { sym: 'AAPL',  price: '15,441', chg: '+1.34%', up: true  },
-        { sym: 'MSFT',  price: '34,526', chg: '+0.67%', up: true  },
-        { sym: 'GOOGL', price: '13,671', chg: '-0.44%', up: false },
-        { sym: 'AMZN',  price: '16,061', chg: '+1.89%', up: true  },
-        { sym: 'NVDA',  price: '56,321', chg: '+2.82%', up: true  },
-        { sym: 'TSLA',  price: '20,722', chg: '-0.91%', up: false },
-        { sym: 'META',  price: '42,276', chg: '+1.10%', up: true  },
-        { sym: 'JPM',   price: '16,403', chg: '+0.52%', up: true  },
-        { sym: 'RELIANCE', price: '2,912', chg: '+0.78%', up: true  },
-        { sym: 'TCS',   price: '3,840', chg: '-0.32%', up: false },
-        { sym: 'INFY',  price: '1,580', chg: '+1.22%', up: true  },
-        { sym: 'HDFCBANK', price: '1,642', chg: '+0.45%', up: true },
-        { sym: 'NFLX',  price: '51,169', chg: '+1.75%', up: true  },
-        { sym: 'AMD',   price: '13,769', chg: '+3.12%', up: true  },
-        { sym: 'COST',  price: '61,055', chg: '+0.94%', up: true  },
-        { sym: 'XOM',   price: '9,569',  chg: '-0.61%', up: false },
-        { sym: 'SBIN',  price: '752',    chg: '+1.05%', up: true  },
+    const tickerData = [
+        { symbol: 'RELIANCE', price: '₹2,912', change: '+0.78%', up: true },
+        { symbol: 'TCS',      price: '₹3,840', change: '-0.32%', up: false },
+        { symbol: 'INFY',     price: '₹1,654', change: '+1.12%', up: true },
+        { symbol: 'HDFCBANK', price: '₹1,623', change: '+0.45%', up: true },
+        { symbol: 'AAPL',     price: '₹15,441', change: '+1.34%', up: true },
+        { symbol: 'NVDA',     price: '₹56,321', change: '+2.82%', up: true },
+        { symbol: 'GOOGL',    price: '₹13,671', change: '-0.44%', up: false },
+        { symbol: 'MSFT',     price: '₹34,526', change: '+0.67%', up: true },
+        { symbol: 'SBIN',     price: '₹782',    change: '+0.91%', up: true },
+        { symbol: 'TSLA',     price: '₹22,189', change: '-1.05%', up: false },
+        { symbol: 'AMZN',     price: '₹15,892', change: '+0.88%', up: true },
+        { symbol: 'META',     price: '₹42,106', change: '+1.56%', up: true },
     ];
     const track = document.getElementById('tickerTrack');
-    const doubled = [...tickers, ...tickers]; // duplicate for seamless loop
-    doubled.forEach(t => {
-        const item = document.createElement('div');
-        item.className = 'ticker-item';
-        item.innerHTML = `
-            <span class="ticker-symbol">${t.sym}</span>
-            <span class="ticker-price">₹${t.price}</span>
-            <span class="ticker-change ${t.up ? 'up' : 'down'}">${t.up ? '▲' : '▼'} ${t.chg}</span>
-        `;
-        track.appendChild(item);
-    });
+    const html = tickerData.map(t =>
+        `<div class="ticker-item">
+            <span class="ticker-symbol">${t.symbol}</span>
+            <span class="ticker-price">${t.price}</span>
+            <span class="ticker-change ${t.up ? 'up' : 'down'}">${t.up ? '▲' : '▼'} ${t.change}</span>
+        </div>`
+    ).join('');
+    track.innerHTML = html + html;
 
-    // ── Animated stock chart background ──
+    // ── Background canvas ──
     const canvas = document.getElementById('bgCanvas');
     const ctx = canvas.getContext('2d');
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
+    let W, H;
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
     resize();
     window.addEventListener('resize', resize);
 
-    // Generate random walk price data for background charts
-    function genPriceSeries(len, start, volatility) {
-        const arr = [start];
-        for (let i = 1; i < len; i++) {
-            const change = (Math.random() - 0.48) * volatility;
-            arr.push(Math.max(10, arr[i - 1] + change));
-        }
-        return arr;
-    }
+    const chartLines = Array.from({ length: 5 }, () => {
+        const pts = 80;
+        const data = [];
+        let v = 50 + Math.random() * 40;
+        for (let i = 0; i < pts; i++) { v += (Math.random() - 0.48) * 3; data.push(v); }
+        return {
+            data, x: Math.random() * 0.3, y: 0.1 + Math.random() * 0.6,
+            w: 0.3 + Math.random() * 0.5, h: 0.12 + Math.random() * 0.2,
+            hue: [210, 260, 180, 340, 30][Math.floor(Math.random() * 5)],
+            alpha: 0.08 + Math.random() * 0.1,
+            speed: 0.2 + Math.random() * 0.4,
+            offset: Math.random() * 80
+        };
+    });
 
-    const chartLines = Array.from({ length: 6 }, (_, i) => ({
-        data: genPriceSeries(120, 100 + Math.random() * 80, 3 + Math.random() * 4),
-        x: Math.random() * 0.75,
-        y: 0.1 + Math.random() * 0.7,
-        w: 0.22 + Math.random() * 0.14,
-        h: 0.08 + Math.random() * 0.10,
-        hue: [210, 260, 180, 140, 200, 170][i],
-        speed: 0.3 + Math.random() * 0.5,
-        offset: Math.random() * 120,
-        alpha: 0.12 + Math.random() * 0.12,
+    const candles = Array.from({ length: 12 }, () => ({
+        x: Math.random(), y: 0.15 + Math.random() * 0.65,
+        open: 30 + Math.random() * 40, close: 30 + Math.random() * 40,
+        alpha: 0.04 + Math.random() * 0.06
     }));
 
-    // Candlestick-style bars
-    const candles = Array.from({ length: 40 }, () => ({
-        x: Math.random(),
-        y: 0.12 + Math.random() * 0.70,
-        open:  80 + Math.random() * 40,
-        close: 80 + Math.random() * 40,
-        high:  130 + Math.random() * 20,
-        low:   60  + Math.random() * 20,
-        alpha: 0.07 + Math.random() * 0.10,
-    }));
-
-    // Floating particles
-    const particles = Array.from({ length: 80 }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: 0.5 + Math.random() * 2,
-        dx: (Math.random() - 0.5) * 0.4,
-        dy: (Math.random() - 0.5) * 0.4,
-        alpha: 0.1 + Math.random() * 0.3,
-        hue: Math.random() > 0.5 ? 140 : 220,
+    const particles = Array.from({ length: 25 }, () => ({
+        x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
+        r: 1 + Math.random() * 1.5,
+        dx: (Math.random() - 0.5) * 0.3, dy: (Math.random() - 0.5) * 0.3,
+        hue: [210, 260, 180][Math.floor(Math.random() * 3)],
+        alpha: 0.15 + Math.random() * 0.2
     }));
 
     let frame = 0;
     function draw() {
-        const W = canvas.width, H = canvas.height;
         ctx.clearRect(0, 0, W, H);
 
-        // radial background glow
         const grad = ctx.createRadialGradient(W * 0.5, H * 0.45, 0, W * 0.5, H * 0.45, W * 0.65);
         grad.addColorStop(0, 'rgba(59,130,246,0.07)');
         grad.addColorStop(0.5, 'rgba(139,92,246,0.03)');
@@ -785,24 +737,15 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, W, H);
 
-        // draw chart lines
         chartLines.forEach(line => {
-            const x0 = line.x * W;
-            const y0 = line.y * H;
-            const w  = line.w * W;
-            const h  = line.h * H;
-            const data = line.data;
-            const len  = data.length;
-            const mn   = Math.min(...data);
-            const mx   = Math.max(...data);
-            const rng  = mx - mn || 1;
+            const x0 = line.x * W, y0 = line.y * H, w = line.w * W, h = line.h * H;
+            const data = line.data, len = data.length;
+            const mn = Math.min(...data), mx = Math.max(...data), rng = mx - mn || 1;
             const shift = (frame * line.speed + line.offset) % len;
-
             const lineGrad = ctx.createLinearGradient(x0, y0, x0 + w, y0);
             lineGrad.addColorStop(0, `hsla(${line.hue},80%,60%,0)`);
             lineGrad.addColorStop(0.4, `hsla(${line.hue},80%,60%,${line.alpha})`);
             lineGrad.addColorStop(1, `hsla(${line.hue},80%,60%,0)`);
-
             ctx.beginPath();
             for (let i = 0; i < len; i++) {
                 const idx = Math.floor((i + shift) % len);
@@ -810,59 +753,35 @@
                 const py = y0 + h - ((data[idx] - mn) / rng) * h;
                 i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
             }
-            ctx.strokeStyle = lineGrad;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            // area fill under line
-            ctx.lineTo(x0 + w, y0 + h);
-            ctx.lineTo(x0, y0 + h);
-            ctx.closePath();
+            ctx.strokeStyle = lineGrad; ctx.lineWidth = 1.5; ctx.stroke();
+            ctx.lineTo(x0 + w, y0 + h); ctx.lineTo(x0, y0 + h); ctx.closePath();
             const areaGrad = ctx.createLinearGradient(x0, y0, x0, y0 + h);
             areaGrad.addColorStop(0, `hsla(${line.hue},80%,60%,${line.alpha * 0.5})`);
             areaGrad.addColorStop(1, `hsla(${line.hue},80%,60%,0)`);
-            ctx.fillStyle = areaGrad;
-            ctx.fill();
+            ctx.fillStyle = areaGrad; ctx.fill();
         });
 
-        // draw candlesticks
         candles.forEach(c => {
-            const cx = c.x * W;
-            const cy = c.y * H;
-            const bw = 10;
+            const cx = c.x * W, cy = c.y * H, bw = 10;
             const bh = Math.abs(c.close - c.open) * 0.6;
             const up = c.close >= c.open;
             const color = up ? `rgba(16,185,129,${c.alpha})` : `rgba(239,68,68,${c.alpha})`;
-            ctx.fillStyle = color;
-            ctx.fillRect(cx - bw / 2, cy, bw, bh);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy - 10);
-            ctx.lineTo(cx, cy + bh + 10);
-            ctx.stroke();
+            ctx.fillStyle = color; ctx.fillRect(cx - bw / 2, cy, bw, bh);
+            ctx.strokeStyle = color; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy + bh + 10); ctx.stroke();
         });
 
-        // particles
         particles.forEach(p => {
             p.x += p.dx; p.y += p.dy;
             if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
             if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${p.hue},80%,65%,${p.alpha})`;
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${p.hue},80%,65%,${p.alpha})`; ctx.fill();
         });
 
-        // grid lines (faint)
-        ctx.strokeStyle = 'rgba(148,163,184,0.03)';
-        ctx.lineWidth = 1;
-        for (let gx = 0; gx < W; gx += 80) {
-            ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
-        }
-        for (let gy = 0; gy < H; gy += 80) {
-            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
-        }
+        ctx.strokeStyle = 'rgba(148,163,184,0.03)'; ctx.lineWidth = 1;
+        for (let gx = 0; gx < W; gx += 80) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+        for (let gy = 0; gy < H; gy += 80) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
 
         frame += 0.25;
         requestAnimationFrame(draw);

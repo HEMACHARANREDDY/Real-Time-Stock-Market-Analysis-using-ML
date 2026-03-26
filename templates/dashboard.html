@@ -131,13 +131,18 @@
         <!-- Top Bar -->
         <header class="topbar">
             <div class="topbar-left">
-                <h2 class="page-title">Market Dashboard</h2>
-                <span class="page-subtitle" id="currentDate"></span>
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h2 class="page-title">Market Dashboard</h2>
+                    <span class="page-subtitle" id="currentDate"></span>
+                </div>
             </div>
             <div class="topbar-right">
                 {% if not is_subscribed %}
                 <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                    <i class="fas fa-crown"></i> Go Pro
                 </a>
                 {% endif %}
                 <div class="topbar-actions">
@@ -224,15 +229,12 @@
                         </div>
                     </div>
                     <div class="chart-type-selector">
-                        <button class="chart-type-btn active" data-type="line" title="Line Chart">
-                            <i class="fas fa-chart-line"></i>
-                        </button>
-                        <button class="chart-type-btn" data-type="candlestick" title="Candlestick">
-                            <i class="fas fa-chart-bar"></i>
-                        </button>
-                        <button class="chart-type-btn" data-type="area" title="Area Chart">
-                            <i class="fas fa-chart-area"></i>
-                        </button>
+                        <select id="dashChartType" class="form-input" style="min-width:150px;padding:0.4rem 0.75rem;font-size:0.82rem;" onchange="switchDashChartType(this.value)">
+                            <option value="line" selected>📈  Line Chart</option>
+                            <option value="area">🌊  Area Chart</option>
+                            <option value="candlestick">📊  Candlestick</option>
+                            <option value="bar">📊  Bar Chart</option>
+                        </select>
                     </div>
                 </div>
                 <div class="chart-container">

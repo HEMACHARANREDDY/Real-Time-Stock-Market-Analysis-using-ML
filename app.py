@@ -18,6 +18,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import warnings
+import hashlib
 warnings.filterwarnings('ignore')
 
 from authlib.integrations.flask_client import OAuth
@@ -180,10 +181,37 @@ google = oauth.register(
 # ─────────────────────────────────────────────
 # AUTH – Simple credentials store
 # ─────────────────────────────────────────────
-USERS = {
-    'admin': 'spulse123',
-    'trader': 'market2026',
-}
+_USERS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'users.json')
+
+def _hash_pw(password):
+    """Return a SHA-256 hex digest of the password."""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def _load_users():
+    """Load users from JSON file, seeding defaults on first run."""
+    defaults = {
+        'admin': _hash_pw('spulse123'),
+        'trader': _hash_pw('market2026'),
+    }
+    if os.path.exists(_USERS_FILE):
+        try:
+            with open(_USERS_FILE) as f:
+                users = json.load(f)
+            # Merge defaults (don't overwrite existing)
+            for k, v in defaults.items():
+                users.setdefault(k, v)
+            return users
+        except Exception:
+            pass
+    return dict(defaults)
+
+def _save_users():
+    """Persist USERS dict to data/users.json."""
+    os.makedirs(os.path.dirname(_USERS_FILE), exist_ok=True)
+    with open(_USERS_FILE, 'w') as f:
+        json.dump(USERS, f, indent=2)
+
+USERS = _load_users()
 
 SUBSCRIPTION_PLANS = {
     'monthly':  {'label': 'Monthly',  'price': 250,  'duration': '1 Month',  'icon': 'fa-calendar'},
@@ -301,7 +329,7 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        if username in USERS and USERS[username] == password:
+        if username in USERS and USERS[username] == _hash_pw(password):
             session['logged_in'] = True
             session['username'] = username.lower()
             session.permanent = bool(request.form.get('remember'))
@@ -310,6 +338,80 @@ def login():
         else:
             flash('Invalid username or password. Please try again.', 'error')
     return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if session.get('logged_in'):
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        full_name = request.form.get('fullname', '').strip()
+        email     = request.form.get('email', '').strip()
+        username  = request.form.get('username', '').strip().lower()
+        password  = request.form.get('password', '')
+        confirm   = request.form.get('confirm_password', '')
+
+        # Validation
+        if not all([full_name, username, password, confirm]):
+            flash('All fields are required.', 'error')
+        elif len(username) < 3:
+            flash('Username must be at least 3 characters.', 'error')
+        elif len(password) < 6:
+            flash('Password must be at least 6 characters.', 'error')
+        elif password != confirm:
+            flash('Passwords do not match.', 'error')
+        elif username in USERS:
+            flash('Username already taken. Please choose another.', 'error')
+        else:
+            # Create the account
+            USERS[username] = _hash_pw(password)
+            _save_users()
+            # Auto-login
+            session['logged_in'] = True
+            session['username']  = username
+            if email:
+                session['email'] = email
+            session.permanent = True
+            # Send welcome email in background
+            if email:
+                threading.Thread(target=send_welcome_email, args=(email, full_name), daemon=True).start()
+            flash(f'Account created successfully! Welcome, {full_name}!', 'success')
+            return redirect(url_for('dashboard'))
+    return render_template('register.html')
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if session.get('logged_in'):
+        return redirect(url_for('dashboard'))
+    step = 'username'          # default first step
+    username_val = ''
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        if action == 'verify':
+            username_val = request.form.get('username', '').strip().lower()
+            if not username_val:
+                flash('Please enter your username.', 'error')
+            elif username_val not in USERS:
+                flash('No account found with that username.', 'error')
+            else:
+                step = 'reset'
+        elif action == 'reset':
+            username_val = request.form.get('username', '').strip().lower()
+            new_pw   = request.form.get('new_password', '')
+            confirm  = request.form.get('confirm_password', '')
+            if not username_val or username_val not in USERS:
+                flash('Invalid request. Please start over.', 'error')
+            elif len(new_pw) < 6:
+                flash('Password must be at least 6 characters.', 'error')
+                step = 'reset'
+            elif new_pw != confirm:
+                flash('Passwords do not match.', 'error')
+                step = 'reset'
+            else:
+                USERS[username_val] = _hash_pw(new_pw)
+                _save_users()
+                flash('Password reset successfully! You can now sign in.', 'success')
+                return redirect(url_for('login'))
+    return render_template('forgot_password.html', step=step, username_val=username_val)
 
 @app.route('/logout')
 def logout():
@@ -388,9 +490,10 @@ def google_callback():
 
 @app.route('/')
 def home():
-    """Public landing page — indexed by Google."""
-    verification = os.environ.get('GOOGLE_SITE_VERIFICATION', '')
-    return render_template('landing.html', google_site_verification=verification)
+    """Redirect to login (or dashboard if already logged in)."""
+    if session.get('logged_in'):
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 @app.route('/dashboard')
 @login_required
@@ -405,7 +508,7 @@ def analysis():
 @app.route('/predictions')
 @login_required
 def predictions():
-    return render_template('predictions.html')
+    return render_template('predictions.html', stock_categories=STOCK_CATEGORIES, stock_names=STOCK_NAMES)
 
 @app.route('/compare')
 @login_required

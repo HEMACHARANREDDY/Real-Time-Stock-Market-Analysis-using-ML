@@ -11,11 +11,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         .subscribe-page {
-            max-width: 760px;
+            max-width: 800px;
             margin: 2rem auto;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1.4rem;
         }
 
         /* ── Plan Selection Cards ── */
@@ -24,22 +24,24 @@
             margin-bottom: 1rem;
         }
         .plans-header .price-crown {
-            font-size: 2.8rem;
-            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            font-size: 3rem;
+            background: linear-gradient(135deg, #f59e0b, #ff4d6a);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: .5rem;
+            margin-bottom: .6rem;
+            filter: drop-shadow(0 0 18px rgba(245,158,11,.4));
         }
         .plans-header h2 {
-            font-size: 1.5rem;
-            font-weight: 800;
+            font-size: 1.8rem;
+            font-weight: 900;
             color: var(--text-primary, #f1f5f9);
-            margin-bottom: .4rem;
+            margin-bottom: .5rem;
+            letter-spacing: -0.5px;
         }
         .plans-header p {
             color: var(--text-secondary, #94a3b8);
-            font-size: .9rem;
+            font-size: .95rem;
             line-height: 1.6;
         }
         .plan-cards {
@@ -52,24 +54,25 @@
         .plan-card {
             background: var(--bg-card, #1a1f2e);
             border: 2px solid rgba(148,163,184,.15);
-            border-radius: 14px;
-            padding: 1.2rem 1rem;
+            border-radius: 16px;
+            padding: 1.5rem 1.2rem;
             text-align: center;
             cursor: pointer;
-            transition: border-color .2s, transform .15s, box-shadow .2s;
+            transition: border-color .22s, transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .22s;
             position: relative;
             user-select: none;
         }
         .plan-card:hover {
-            border-color: rgba(245,158,11,.5);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 22px rgba(245,158,11,.12);
+            border-color: rgba(245,158,11,.55);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(245,158,11,.14);
         }
         .plan-card.selected {
             border-color: #f59e0b;
-            box-shadow: 0 0 0 3px rgba(245,158,11,.2), 0 6px 22px rgba(245,158,11,.15);
+            background: linear-gradient(135deg, rgba(245,158,11,.06), rgba(239,68,68,.04));
+            box-shadow: 0 0 0 3px rgba(245,158,11,.22), 0 8px 28px rgba(245,158,11,.18);
         }
-        .plan-card.selected .plan-icon { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
+        .plan-card.selected .plan-icon { background: linear-gradient(135deg, #f59e0b, #ff4d6a); color: #fff; box-shadow: 0 4px 14px rgba(245,158,11,.35); }
         .plan-card .plan-badge-popular {
             position: absolute;
             top: -.7rem; left: 50%; transform: translateX(-50%);
@@ -84,25 +87,26 @@
             white-space: nowrap;
         }
         .plan-icon {
-            width: 42px; height: 42px;
-            border-radius: 12px;
+            width: 48px; height: 48px;
+            border-radius: 14px;
             background: rgba(245,158,11,.12);
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: #f59e0b;
-            margin: 0 auto .7rem;
-            transition: background .2s, color .2s;
+            margin: 0 auto .85rem;
+            transition: background .22s, color .22s, box-shadow .22s, transform .22s;
         }
+        .plan-card:hover .plan-icon { transform: scale(1.08); }
         .plan-label {
-            font-size: .8rem;
+            font-size: .75rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: .08em;
+            letter-spacing: .1em;
             color: var(--text-secondary, #94a3b8);
-            margin-bottom: .3rem;
+            margin-bottom: .35rem;
         }
         .plan-price {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 900;
             color: var(--text-primary, #f1f5f9);
             line-height: 1;
@@ -212,17 +216,25 @@
             color: var(--text-primary, #f1f5f9);
         }
         .feature-list li .feat-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: rgba(16,185,129,.15);
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: rgba(18,232,160,.13);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #10b981;
-            font-size: .75rem;
+            color: #12e8a0;
+            font-size: .78rem;
             flex-shrink: 0;
+            transition: transform .18s;
         }
+        .feature-list li:hover .feat-icon { transform: scale(1.12); }
+        .feature-list li {
+            padding: .35rem .5rem;
+            border-radius: 8px;
+            transition: background .18s;
+        }
+        .feature-list li:hover { background: rgba(18,232,160,.05); }
 
         /* ── Payment Steps ── */
         .steps-card {
@@ -246,17 +258,18 @@
             margin-bottom: .85rem;
         }
         .step-num {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            background: linear-gradient(135deg, #4f8eff, #9b6dff);
             color: #fff;
-            font-size: .8rem;
-            font-weight: 700;
+            font-size: .82rem;
+            font-weight: 800;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(79,142,255,.35);
         }
         .step-text {
             font-size: .88rem;
@@ -375,11 +388,11 @@
             display: flex;
             align-items: flex-start;
             gap: .8rem;
-            background: rgba(16,185,129,.1);
-            border: 1px solid rgba(16,185,129,.25);
-            border-radius: 12px;
-            padding: 1.1rem 1.4rem;
-            color: #10b981;
+            background: rgba(18,232,160,.09);
+            border: 1px solid rgba(18,232,160,.28);
+            border-radius: 14px;
+            padding: 1.2rem 1.5rem;
+            color: #12e8a0;
         }
         .pending-banner i { font-size: 1.2rem; margin-top: .05rem; }
         .pending-banner div { font-size: .9rem; line-height: 1.55; }
@@ -399,10 +412,10 @@
 
         /* ── Premium Member Dashboard ── */
         .premium-hero {
-            background: linear-gradient(135deg, rgba(16,185,129,.15), rgba(6,182,212,.12));
-            border: 1px solid rgba(16,185,129,.35);
-            border-radius: 20px;
-            padding: 2.2rem;
+            background: linear-gradient(135deg, rgba(18,232,160,.12), rgba(79,142,255,.1));
+            border: 1px solid rgba(18,232,160,.3);
+            border-radius: 22px;
+            padding: 2.5rem 2rem;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -411,23 +424,23 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 50% 0%, rgba(16,185,129,.18), transparent 65%);
+            background: radial-gradient(ellipse at 50% 0%, rgba(18,232,160,.16), transparent 65%);
             pointer-events: none;
         }
         .premium-badge-large {
             display: inline-flex;
             align-items: center;
             gap: .5rem;
-            padding: .4rem 1.1rem;
-            background: linear-gradient(135deg, #10b981, #06b6d4);
-            color: #fff;
+            padding: .45rem 1.2rem;
+            background: linear-gradient(135deg, #12e8a0, #4f8eff);
+            color: #0a0e17;
             font-size: .78rem;
-            font-weight: 800;
-            letter-spacing: .1em;
+            font-weight: 900;
+            letter-spacing: .12em;
             text-transform: uppercase;
             border-radius: 50px;
-            margin-bottom: 1rem;
-            box-shadow: 0 4px 18px rgba(16,185,129,.35);
+            margin-bottom: 1.1rem;
+            box-shadow: 0 4px 20px rgba(18,232,160,.38);
         }
         .premium-hero h2 {
             font-size: 1.7rem;
@@ -458,16 +471,17 @@
             text-align: left;
         }
         .premium-feat-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #10b981, #06b6d4);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #12e8a0, #4f8eff);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
-            font-size: .9rem;
+            color: #0a0e17;
+            font-size: .95rem;
             flex-shrink: 0;
+            box-shadow: 0 3px 12px rgba(18,232,160,.3);
         }
         .premium-feat-title {
             font-size: .88rem;
@@ -502,14 +516,14 @@
         }
         .btn-premium-action:hover { opacity: .88; transform: translateY(-1px); }
         .btn-pa-green {
-            background: linear-gradient(135deg, #10b981, #06b6d4);
-            color: #fff;
-            box-shadow: 0 4px 16px rgba(16,185,129,.3);
+            background: linear-gradient(135deg, #12e8a0, #4f8eff);
+            color: #0a0e17;
+            box-shadow: 0 4px 18px rgba(18,232,160,.32);
         }
         .btn-pa-blue {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #4f8eff, #9b6dff);
             color: #fff;
-            box-shadow: 0 4px 16px rgba(59,130,246,.3);
+            box-shadow: 0 4px 18px rgba(79,142,255,.32);
         }
         .btn-pa-outline {
             background: rgba(148,163,184,.08);
@@ -536,17 +550,18 @@
             flex-shrink: 0;
         }
         .pmi-name { font-size: 1rem; font-weight: 700; color: var(--text-primary,#f1f5f9); }
-        .pmi-status { font-size: .8rem; color: #10b981; font-weight: 600; margin-top: 2px; }
+        .pmi-status { font-size: .8rem; color: #12e8a0; font-weight: 600; margin-top: 2px; }
         .pmi-badge {
             margin-left: auto;
             padding: .3rem .9rem;
-            background: linear-gradient(135deg, #10b981, #06b6d4);
-            color: #fff;
+            background: linear-gradient(135deg, #12e8a0, #4f8eff);
+            color: #0a0e17;
             font-size: .75rem;
             font-weight: 800;
-            letter-spacing: .08em;
+            letter-spacing: .1em;
             border-radius: 50px;
             text-transform: uppercase;
+            box-shadow: 0 3px 12px rgba(18,232,160,.3);
         }
     </style>
 </head>
@@ -561,6 +576,13 @@
             </div>
             </a>
             <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-search">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
+                <kbd>Enter</kbd>
+            </div>
         </div>
         <ul class="nav-menu">
             <li class="nav-item"><a href="/dashboard" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a></li>
@@ -585,11 +607,16 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <h2 class="page-title">Subscribe</h2>
-                <span class="page-subtitle">Unlock Text Report &amp; Premium Features</span>
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h2 class="page-title">Go Pro</h2>
+                    <span class="page-subtitle">Unlock Premium Features &amp; Text Reports</span>
+                </div>
             </div>
             <div class="topbar-right">
-                <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                <div class="topbar-actions">
+                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                </div>
             </div>
         </header>
 

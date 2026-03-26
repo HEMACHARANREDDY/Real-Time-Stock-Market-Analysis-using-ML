@@ -5,6 +5,7 @@
 let priceChart = null, macdChart = null, rsiChart = null, stochChart = null, volumeAnalysisChart = null;
 let lastAnalysisData = null;
 let analysisView = 'graph';
+let analysisChartType = 'line';
 
 document.addEventListener('DOMContentLoaded', () => {
     initCommon();
@@ -94,63 +95,84 @@ function renderPriceWithBollinger(data) {
     if (priceChart) priceChart.destroy();
     
     const defaults = getChartDefaults();
+    const isArea = analysisChartType === 'area';
+    const isBar  = analysisChartType === 'bar';
+
+    const baseDatasets = [
+        {
+            label: 'Close',
+            data: data.close,
+            borderColor: COLORS.blue,
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 0,
+            order: 1,
+            ...(isArea ? { fill: true, backgroundColor: 'rgba(59,130,246,0.12)' } : {}),
+        },
+        {
+            label: 'SMA 20',
+            data: data.sma_20,
+            borderColor: COLORS.orange,
+            borderWidth: 1.5,
+            borderDash: [5, 5],
+            tension: 0.3,
+            pointRadius: 0,
+            order: 2,
+        },
+        {
+            label: 'SMA 50',
+            data: data.sma_50,
+            borderColor: COLORS.purple,
+            borderWidth: 1.5,
+            borderDash: [5, 5],
+            tension: 0.3,
+            pointRadius: 0,
+            order: 3,
+        },
+        {
+            label: 'BB Upper',
+            data: data.bb_upper,
+            borderColor: 'rgba(239, 68, 68, 0.4)',
+            borderWidth: 1,
+            tension: 0.3,
+            pointRadius: 0,
+            fill: false,
+            order: 4,
+        },
+        {
+            label: 'BB Lower',
+            data: data.bb_lower,
+            borderColor: 'rgba(16, 185, 129, 0.4)',
+            borderWidth: 1,
+            tension: 0.3,
+            pointRadius: 0,
+            fill: '-1',
+            backgroundColor: 'rgba(59, 130, 246, 0.05)',
+            order: 5,
+        },
+    ];
+
+    if (isBar) {
+        // Bar: show close as bars, overlays as lines
+        const barColors = data.close.map((c, i) => {
+            if (i === 0) return 'rgba(59,130,246,0.5)';
+            return c >= data.close[i-1] ? 'rgba(16,185,129,0.6)' : 'rgba(239,68,68,0.6)';
+        });
+        baseDatasets[0] = {
+            label: 'Close',
+            data: data.close,
+            backgroundColor: barColors,
+            borderRadius: 2,
+            order: 1,
+            type: 'bar',
+        };
+    }
     
     priceChart = new Chart(ctx, {
-        type: 'line',
+        type: isBar ? 'bar' : 'line',
         data: {
             labels: data.dates,
-            datasets: [
-                {
-                    label: 'Close',
-                    data: data.close,
-                    borderColor: COLORS.blue,
-                    borderWidth: 2,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    order: 1,
-                },
-                {
-                    label: 'SMA 20',
-                    data: data.sma_20,
-                    borderColor: COLORS.orange,
-                    borderWidth: 1.5,
-                    borderDash: [5, 5],
-                    tension: 0.3,
-                    pointRadius: 0,
-                    order: 2,
-                },
-                {
-                    label: 'SMA 50',
-                    data: data.sma_50,
-                    borderColor: COLORS.purple,
-                    borderWidth: 1.5,
-                    borderDash: [5, 5],
-                    tension: 0.3,
-                    pointRadius: 0,
-                    order: 3,
-                },
-                {
-                    label: 'BB Upper',
-                    data: data.bb_upper,
-                    borderColor: 'rgba(239, 68, 68, 0.4)',
-                    borderWidth: 1,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    fill: false,
-                    order: 4,
-                },
-                {
-                    label: 'BB Lower',
-                    data: data.bb_lower,
-                    borderColor: 'rgba(16, 185, 129, 0.4)',
-                    borderWidth: 1,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    fill: '-1',
-                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                    order: 5,
-                },
-            ]
+            datasets: baseDatasets
         },
         options: {
             responsive: true,
@@ -240,20 +262,32 @@ function renderRSI(data) {
     if (rsiChart) rsiChart.destroy();
     
     const defaults = getChartDefaults();
+    const isArea = analysisChartType === 'area';
+    const isBar  = analysisChartType === 'bar';
+
+    const rsiDataset = isBar
+        ? {
+            label: 'RSI (14)',
+            data: data.rsi,
+            backgroundColor: data.rsi.map(v => v > 70 ? 'rgba(239,68,68,0.6)' : v < 30 ? 'rgba(16,185,129,0.6)' : 'rgba(139,92,246,0.5)'),
+            borderRadius: 1,
+        }
+        : {
+            label: 'RSI (14)',
+            data: data.rsi,
+            borderColor: COLORS.purple,
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 0,
+            fill: isArea,
+            ...(isArea ? { backgroundColor: 'rgba(139,92,246,0.12)' } : {}),
+        };
     
     rsiChart = new Chart(ctx, {
-        type: 'line',
+        type: isBar ? 'bar' : 'line',
         data: {
             labels: data.dates,
-            datasets: [{
-                label: 'RSI (14)',
-                data: data.rsi,
-                borderColor: COLORS.purple,
-                borderWidth: 2,
-                tension: 0.3,
-                pointRadius: 0,
-                fill: false,
-            }]
+            datasets: [rsiDataset]
         },
         options: {
             responsive: true,
@@ -293,6 +327,7 @@ function renderStochastic(data) {
     if (stochChart) stochChart.destroy();
     
     const defaults = getChartDefaults();
+    const isArea = analysisChartType === 'area';
     
     stochChart = new Chart(ctx, {
         type: 'line',
@@ -306,6 +341,8 @@ function renderStochastic(data) {
                     borderWidth: 1.5,
                     tension: 0.3,
                     pointRadius: 0,
+                    fill: isArea,
+                    ...(isArea ? { backgroundColor: 'rgba(6,182,212,0.1)' } : {}),
                 },
                 {
                     label: '%D',
@@ -315,6 +352,8 @@ function renderStochastic(data) {
                     tension: 0.3,
                     pointRadius: 0,
                     borderDash: [5, 5],
+                    fill: isArea,
+                    ...(isArea ? { backgroundColor: 'rgba(245,158,11,0.08)' } : {}),
                 },
             ]
         },
@@ -396,7 +435,7 @@ function switchAnalysisView(view) {
         const subscribed = btn && btn.dataset.subscribed === 'true';
 
         if (!subscribed) {
-            if (hint) hint.textContent = 'Subscribe for ₹25 to unlock Text Reports';
+            if (hint) hint.textContent = 'Subscribe to Pro to unlock Text Reports';
             // Build fake blurred report lines for background
             const fakeLines = Array.from({length: 18}, (_, i) => {
                 const w = [60, 85, 72, 90, 55, 78, 68, 95, 50, 80][i % 10];
@@ -413,7 +452,7 @@ function switchAnalysisView(view) {
                         <div class="gate-icon"><i class="fas fa-lock"></i></div>
                         <h3>Premium Feature</h3>
                         <p>The <strong>Text Report</strong> is available to subscribers only.<br>Unlock it with a one-time payment.</p>
-                        <div class="blur-gate-price">₹25<small>one-time &middot; lifetime access</small></div>
+                        <div class="blur-gate-price">Pro<small>lifetime access</small></div>
                         <ul class="blur-gate-features">
                             <li>Full technical analysis text report</li>
                             <li>Signal breakdown for all indicators</li>
@@ -422,7 +461,7 @@ function switchAnalysisView(view) {
                         </ul>
                         <div class="gate-actions-row">
                             <a href="/subscribe" class="btn-gate-subscribe">
-                                <i class="fas fa-crown"></i> Subscribe for ₹25
+                                <i class="fas fa-crown"></i> Go Pro
                             </a>
                             <button class="btn-gate-back" onclick="switchAnalysisView('graph')">
                                 <i class="fas fa-chart-area"></i> Back to Graph
@@ -527,5 +566,20 @@ function renderAnalysisTextReport(signals, symbol) {
 
     document.getElementById('analysisTextReport').innerHTML = html;
 }
+
+/* ── Chart Type Switching ─────────────────────────────────── */
+function switchAnalysisChartType(type) {
+    analysisChartType = type;
+    const sel = document.getElementById('analysisChartType');
+    if (sel && sel.value !== type) sel.value = type;
+    if (lastAnalysisData) {
+        renderPriceWithBollinger(lastAnalysisData);
+        renderMACD(lastAnalysisData);
+        renderRSI(lastAnalysisData);
+        renderStochastic(lastAnalysisData);
+        renderVolumeAnalysis(lastAnalysisData);
+    }
+}
+window.switchAnalysisChartType = switchAnalysisChartType;
 
 window.runAnalysis = runAnalysis;

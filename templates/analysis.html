@@ -73,13 +73,16 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <h2 class="page-title">Technical Analysis</h2>
-                <span class="page-subtitle" id="currentDate"></span>
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h2 class="page-title">Technical Analysis</h2>
+                    <span class="page-subtitle" id="currentDate"></span>
+                </div>
             </div>
             <div class="topbar-right">
                 {% if not is_subscribed %}
                 <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                    <i class="fas fa-crown"></i> Go Pro
                 </a>
                 {% endif %}
                 <div class="topbar-actions">
@@ -220,6 +223,17 @@
 
         <!-- GRAPH VIEW -->
         <div id="analysisGraphView">
+
+        <!-- Chart Type -->
+        <div style="margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;">
+            <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;">Chart Type:</label>
+            <select id="analysisChartType" class="form-input" style="min-width:160px;" onchange="switchAnalysisChartType(this.value)">
+                <option value="line" selected>📈  Line Chart</option>
+                <option value="area">🌊  Area Chart</option>
+                <option value="bar">📊  Bar Chart</option>
+            </select>
+        </div>
+
         <div class="content-grid analysis-grid">
             <!-- Price + Bollinger -->
             <div class="glass-card chart-full">

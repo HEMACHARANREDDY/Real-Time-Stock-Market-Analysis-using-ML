@@ -70,16 +70,21 @@
     <main class="main-content">
         <header class="topbar">
             <div class="topbar-left">
-                <h2 class="page-title">ML Price Predictions</h2>
-                <span class="page-subtitle" id="currentDate"></span>
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h2 class="page-title">ML Price Predictions</h2>
+                    <span class="page-subtitle" id="currentDate"></span>
+                </div>
             </div>
             <div class="topbar-right">
                 {% if not is_subscribed %}
                 <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Subscribe <span class="sub-price">₹25</span>
+                    <i class="fas fa-crown"></i> Go Pro
                 </a>
                 {% endif %}
-                <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                <div class="topbar-actions">
+                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+                </div>
             </div>
         </header>
 
@@ -88,7 +93,15 @@
             <div class="analysis-controls">
                 <div class="control-group">
                     <label>Stock Symbol</label>
-                    <input type="text" id="predSymbol" class="form-input" value="AAPL" placeholder="Enter symbol">
+                    <select id="predSymbol" class="form-input">
+                        {% for category, symbols in stock_categories.items() %}
+                        <optgroup label="{{ category }}">
+                            {% for sym in symbols %}
+                            <option value="{{ sym }}"{% if sym == 'AAPL' %} selected{% endif %}>{{ sym }} — {{ stock_names.get(sym, sym) }}</option>
+                            {% endfor %}
+                        </optgroup>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="control-group">
                     <label>Forecast Days</label>
@@ -169,25 +182,137 @@
 
             <!-- GRAPH VIEW -->
             <div id="predGraphView">
-            <!-- Prediction Chart -->
-            <div class="content-grid prediction-grid">
-                <div class="glass-card chart-full">
-                    <div class="card-header">
-                        <h3><i class="fas fa-chart-line"></i> Actual vs Predicted Prices</h3>
-                        <div class="chart-legend" id="predChartLegend"></div>
+
+            <!-- Chart Type Selector -->
+            <div class="analysis-controls" style="margin-bottom:1.25rem;">
+                <div class="control-group">
+                    <label>Chart Type</label>
+                    <select id="chartTypeSelect" class="form-input" onchange="switchChartType(this.value)">
+                        <option value="line" selected>📈  Line Chart</option>
+                        <option value="area">🌊  Area Chart</option>
+                        <option value="bar">📊  Bar Chart</option>
+                        <option value="pie">🥧  Pie Chart</option>
+                        <option value="radar">🎯  Radar Chart</option>
+                        <option value="doughnut">🍩  Doughnut Chart</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- LINE / AREA / BAR chart panels -->
+            <div id="chartPanel_line" class="chart-panel">
+                <div class="content-grid prediction-grid">
+                    <div class="glass-card chart-full">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> Actual vs Predicted Prices</h3>
+                        </div>
+                        <div class="chart-container large-chart">
+                            <canvas id="predictionChart"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-container large-chart">
-                        <canvas id="predictionChart"></canvas>
+                    <div class="glass-card chart-full">
+                        <div class="card-header">
+                            <h3><i class="fas fa-crystal-ball"></i> Future Price Forecast</h3>
+                        </div>
+                        <div class="chart-container large-chart">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Future Forecast -->
-                <div class="glass-card chart-full">
-                    <div class="card-header">
-                        <h3><i class="fas fa-crystal-ball"></i> Future Price Forecast</h3>
+            <div id="chartPanel_area" class="chart-panel" style="display:none;">
+                <div class="content-grid prediction-grid">
+                    <div class="glass-card chart-full">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-area"></i> Actual vs Predicted — Area View</h3>
+                        </div>
+                        <div class="chart-container large-chart">
+                            <canvas id="areaChart"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-container large-chart">
-                        <canvas id="forecastChart"></canvas>
+                    <div class="glass-card chart-full">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-area"></i> Forecast — Area View</h3>
+                        </div>
+                        <div class="chart-container large-chart">
+                            <canvas id="areaForecastChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chartPanel_bar" class="chart-panel" style="display:none;">
+                <div class="content-grid prediction-grid">
+                    <div class="glass-card chart-full">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> Model Prediction Comparison — Bar</h3>
+                        </div>
+                        <div class="chart-container large-chart">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-full">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> Forecast Price Range — Bar</h3>
+                        </div>
+                        <div class="chart-container large-chart">
+                            <canvas id="barForecastChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chartPanel_pie" class="chart-panel" style="display:none;">
+                <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-pie"></i> Model Accuracy Distribution</h3>
+                        </div>
+                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-pie"></i> Error Distribution by Model</h3>
+                        </div>
+                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                            <canvas id="pieErrorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chartPanel_radar" class="chart-panel" style="display:none;">
+                <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-crosshairs"></i> Model Performance Radar</h3>
+                        </div>
+                        <div class="chart-container" style="max-width:520px;margin:0 auto;">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chartPanel_doughnut" class="chart-panel" style="display:none;">
+                <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));">
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-circle-notch"></i> R² Score Share</h3>
+                        </div>
+                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                            <canvas id="doughnutChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-circle-notch"></i> Feature Importance</h3>
+                        </div>
+                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                            <canvas id="doughnutFeatureChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>

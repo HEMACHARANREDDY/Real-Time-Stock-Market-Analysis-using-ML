@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>S Pulse - Sector Heatmap</title>
+    <meta name="description" content="Visual sector heatmap showing real-time performance of major market sectors and individual stocks.">
+    <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/dashboard" style="text-decoration:none;">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>
+                </div>
+                <div class="logo-text">
+                    <h1>S Pulse</h1>
+                    <span class="logo-badge">AI</span>
+                </div>
+            </div>
+            </a>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-search">
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
+                <kbd>Enter</kbd>
+            </div>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/dashboard" class="nav-link">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/analysis" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Technical Analysis</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/predictions" class="nav-link">
+                    <i class="fas fa-brain"></i>
+                    <span>ML Predictions</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/market-predictions" class="nav-link">
+                    <i class="fas fa-globe"></i>
+                    <span>Market Predictions</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/compare" class="nav-link">
+                    <i class="fas fa-balance-scale"></i>
+                    <span>Compare Stocks</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/watchlist" class="nav-link">
+                    <i class="fas fa-star"></i>
+                    <span>Watchlist</span>
+                </a>
+            </li>
+            <li class="nav-item active">
+                <a href="/heatmap" class="nav-link">
+                    <i class="fas fa-fire"></i>
+                    <span>Sector Heatmap</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
+                <div class="user-details">
+                    <div class="user-name" id="sidebarUsername">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
+                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
+                </div>
+            </div>
+            <div class="market-status" id="marketStatus">
+                <div class="status-dot"></div>
+                <span>Market Data Live</span>
+            </div>
+            <a href="/logout" class="btn-logout">
+                <i class="fas fa-right-from-bracket"></i> Sign Out
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h2 class="page-title">Sector Heatmap</h2>
+                    <span class="page-subtitle" id="currentDate"></span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                {% if not is_subscribed %}
+                <a href="/subscribe" class="btn-subscribe-topbar">
+                    <i class="fas fa-crown"></i> Go Pro
+                </a>
+                {% endif %}
+                <div class="topbar-actions">
+                    <div class="period-selector" style="margin-right:0.5rem;">
+                        <button class="period-btn" data-period="1d" data-active="true">1D</button>
+                        <button class="period-btn" data-period="1wk">1W</button>
+                        <button class="period-btn" data-period="1mo">1M</button>
+                        <button class="period-btn" data-period="3mo">3M</button>
+                    </div>
+                    <button class="btn-icon" id="refreshBtn" title="Refresh Heatmap">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn-icon" id="themeToggle" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sector Summary Cards -->
+        <div class="quick-stats" id="sectorSummary">
+            <div class="stat-card glass-card">
+                <div class="stat-icon green"><i class="fas fa-arrow-trend-up"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Top Sector</span>
+                    <span class="stat-value" id="statTopSector">--</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon red"><i class="fas fa-arrow-trend-down"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Worst Sector</span>
+                    <span class="stat-value" id="statWorstSector">--</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon blue"><i class="fas fa-trophy"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Top Gainer</span>
+                    <span class="stat-value" id="statTopStock">--</span>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon orange"><i class="fas fa-layer-group"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Sectors Tracked</span>
+                    <span class="stat-value" id="statSectorCount">6</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Heatmap Grid -->
+        <div id="heatmapContainer" class="glass-card" style="padding:1.5rem;margin-bottom:1.5rem;">
+            <div class="card-header" style="margin-bottom:1rem;">
+                <h3><i class="fas fa-fire" style="color:#f59e0b;"></i> Sector Performance</h3>
+                <div style="display:flex;align-items:center;gap:1rem;">
+                    <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:var(--text-secondary);">
+                        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#ef4444;"></span> Decline
+                        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#374151;margin-left:0.4rem;"></span> Flat
+                        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#10b981;margin-left:0.4rem;"></span> Gain
+                    </div>
+                </div>
+            </div>
+            <div id="heatmapGrid" style="display:grid;gap:1rem;">
+                <div style="text-align:center;padding:3rem;color:var(--text-secondary);">
+                    <div class="spinner"></div>
+                    <span style="display:block;margin-top:0.75rem;">Loading sector data…</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sector Detail Expanded (populated by JS when user clicks a sector) -->
+        <div id="sectorDetail" class="glass-card" style="padding:1.5rem;display:none;">
+            <div class="card-header" style="margin-bottom:1rem;">
+                <h3 id="sectorDetailTitle">Sector Detail</h3>
+                <button class="btn-icon" id="closeSectorDetail" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="sectorDetailBody"></div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/heatmap.js"></script>
+</body>
+</html>

@@ -3,17 +3,19 @@
    ═══════════════════════════════════════════════════════════ */
 
 let predictionChart = null, forecastChart = null, featureChart = null;
+let areaChart = null, areaForecastChart = null;
+let barChart = null, barForecastChart = null;
+let pieChart = null, pieErrorChart = null;
+let radarChart = null;
+let doughnutChart = null, doughnutFeatureChart = null;
 let lastPredData = null;
 let predView = 'graph';
+let currentChartType = 'line';
 
 document.addEventListener('DOMContentLoaded', () => {
     initCommon();
     
     document.getElementById('predictBtn').addEventListener('click', runPrediction);
-    
-    document.getElementById('predSymbol').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') runPrediction();
-    });
 });
 
 async function runPrediction() {
@@ -88,9 +90,9 @@ function renderPredictionResults(data) {
     // Model cards
     renderModelCards(data);
     
-    // Charts
-    renderPredictionChart(data);
-    renderForecastChart(data);
+    // Charts — render current type
+    lastPredData = data;
+    renderChartByType(currentChartType, data);
     
     // Metrics table
     renderMetricsTable(data);
@@ -350,6 +352,357 @@ function renderFeatureImportance(features) {
             }
         }
     });
+}
+
+/* ── Chart Type Switcher ──────────────────────────────────── */
+function switchChartType(type) {
+    currentChartType = type;
+    // Sync dropdown
+    const sel = document.getElementById('chartTypeSelect');
+    if (sel) sel.value = type;
+    // Show/hide panels
+    document.querySelectorAll('.chart-panel').forEach(p => p.style.display = 'none');
+    const panel = document.getElementById('chartPanel_' + type);
+    if (panel) panel.style.display = '';
+    // Render the selected chart type with cached data
+    if (lastPredData) renderChartByType(type, lastPredData);
+}
+
+function renderChartByType(type, data) {
+    switch (type) {
+        case 'line':
+            renderPredictionChart(data);
+            renderForecastChart(data);
+            break;
+        case 'area':
+            renderAreaChart(data);
+            renderAreaForecastChart(data);
+            break;
+        case 'bar':
+            renderBarChart(data);
+            renderBarForecastChart(data);
+            break;
+        case 'pie':
+            renderPieChart(data);
+            renderPieErrorChart(data);
+            break;
+        case 'radar':
+            renderRadarChart(data);
+            break;
+        case 'doughnut':
+            renderDoughnutChart(data);
+            renderDoughnutFeatureChart(data);
+            break;
+    }
+}
+
+/* ── Area Charts ──────────────────────────────────────────── */
+function renderAreaChart(data) {
+    const ctx = document.getElementById('areaChart');
+    if (!ctx) return;
+    if (areaChart) areaChart.destroy();
+    const defaults = getChartDefaults();
+    const modelColors = {
+        'Random Forest': COLORS.green, 'Gradient Boosting': COLORS.purple,
+        'Ridge Regression': COLORS.cyan, 'SVR': COLORS.orange,
+        'Linear Regression': COLORS.pink, 'Ensemble': '#f59e0b',
+    };
+    const datasets = [{
+        label: 'Actual', data: data.actual_prices,
+        borderColor: COLORS.blue, backgroundColor: hexToRgba(COLORS.blue, 0.15),
+        borderWidth: 2, tension: 0.3, pointRadius: 0, fill: true,
+    }];
+    for (const [name, model] of Object.entries(data.models)) {
+        if (name === 'Ensemble') continue;
+        const c = modelColors[name] || COLORS.orange;
+        datasets.push({
+            label: name, data: model.predictions,
+            borderColor: c, backgroundColor: hexToRgba(c, 0.06),
+            borderWidth: 1.5, tension: 0.3, pointRadius: 0, fill: true, borderDash: [4, 4],
+        });
+    }
+    if (data.models['Ensemble']) {
+        datasets.push({
+            label: 'Ensemble', data: data.models['Ensemble'].predictions,
+            borderColor: '#f59e0b', backgroundColor: hexToRgba('#f59e0b', 0.1),
+            borderWidth: 2.5, tension: 0.3, pointRadius: 0, fill: true,
+        });
+    }
+    areaChart = new Chart(ctx, {
+        type: 'line', data: { labels: data.test_dates, datasets },
+        options: chartLineOpts(defaults),
+    });
+}
+
+function renderAreaForecastChart(data) {
+    const ctx = document.getElementById('areaForecastChart');
+    if (!ctx) return;
+    if (areaForecastChart) areaForecastChart.destroy();
+    const defaults = getChartDefaults();
+    const futureDates = data.future.map(f => f.date);
+    const allDates = [data.test_dates[data.test_dates.length - 1], ...futureDates];
+    const allPredicted = [data.current_price, ...data.future.map(f => f.predicted_price)];
+    const allUpper = [data.current_price, ...data.future.map(f => f.upper_bound)];
+    const allLower = [data.current_price, ...data.future.map(f => f.lower_bound)];
+
+    areaForecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: allDates,
+            datasets: [
+                { label: 'Predicted', data: allPredicted, borderColor: COLORS.blue, backgroundColor: hexToRgba(COLORS.blue, 0.18), borderWidth: 2.5, tension: 0.3, pointRadius: 2, fill: true },
+                { label: 'Upper Bound', data: allUpper, borderColor: 'rgba(16,185,129,0.4)', borderWidth: 1, tension: 0.3, pointRadius: 0, fill: false },
+                { label: 'Lower Bound', data: allLower, borderColor: 'rgba(239,68,68,0.4)', borderWidth: 1, tension: 0.3, pointRadius: 0, fill: '-1', backgroundColor: 'rgba(59,130,246,0.08)' },
+            ]
+        },
+        options: chartLineOpts(defaults),
+    });
+}
+
+/* ── Bar Charts ──────────────────────────────────────────── */
+function renderBarChart(data) {
+    const ctx = document.getElementById('barChart');
+    if (!ctx) return;
+    if (barChart) barChart.destroy();
+    const defaults = getChartDefaults();
+    const modelNames = Object.keys(data.models);
+    const lastActual = data.actual_prices[data.actual_prices.length - 1];
+    const modelColors = [COLORS.green, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.pink, '#f59e0b'];
+
+    const barData = modelNames.map((name, i) => {
+        const preds = data.models[name].predictions;
+        return preds[preds.length - 1];
+    });
+
+    barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: modelNames,
+            datasets: [
+                { label: 'Actual Price', data: modelNames.map(() => lastActual), backgroundColor: hexToRgba(COLORS.blue, 0.7), borderRadius: 6, barPercentage: 0.5 },
+                { label: 'Predicted Price', data: barData, backgroundColor: modelColors.map(c => hexToRgba(c, 0.7)), borderRadius: 6, barPercentage: 0.5 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: defaults.textColor, usePointStyle: true, font: { size: 11 } } },
+                tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1, callbacks: { label: ctx => `${ctx.dataset.label}: ${formatPrice(ctx.parsed.y)}` } }
+            },
+            scales: {
+                x: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, font: { size: 10 } } },
+                y: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, font: { size: 10 }, callback: v => formatPrice(v) } },
+            }
+        }
+    });
+}
+
+function renderBarForecastChart(data) {
+    const ctx = document.getElementById('barForecastChart');
+    if (!ctx) return;
+    if (barForecastChart) barForecastChart.destroy();
+    const defaults = getChartDefaults();
+
+    // Sample forecast at intervals
+    const step = Math.max(1, Math.floor(data.future.length / 10));
+    const sampled = data.future.filter((_, i) => i % step === 0 || i === data.future.length - 1);
+    const labels = sampled.map(f => f.date);
+    const predicted = sampled.map(f => f.predicted_price);
+    const upper = sampled.map(f => f.upper_bound);
+    const lower = sampled.map(f => f.lower_bound);
+
+    barForecastChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Upper Bound', data: upper, backgroundColor: hexToRgba(COLORS.green, 0.5), borderRadius: 4 },
+                { label: 'Predicted', data: predicted, backgroundColor: hexToRgba(COLORS.blue, 0.7), borderRadius: 4 },
+                { label: 'Lower Bound', data: lower, backgroundColor: hexToRgba(COLORS.red || '#ef4444', 0.5), borderRadius: 4 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: defaults.textColor, usePointStyle: true, font: { size: 11 } } },
+                tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1, callbacks: { label: ctx => `${ctx.dataset.label}: ${formatPrice(ctx.parsed.y)}` } }
+            },
+            scales: {
+                x: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, font: { size: 9 }, maxRotation: 45 } },
+                y: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, font: { size: 10 }, callback: v => formatPrice(v) } },
+            }
+        }
+    });
+}
+
+/* ── Pie Charts ──────────────────────────────────────────── */
+function renderPieChart(data) {
+    const ctx = document.getElementById('pieChart');
+    if (!ctx) return;
+    if (pieChart) pieChart.destroy();
+    const defaults = getChartDefaults();
+    const modelNames = Object.keys(data.models);
+    const r2Scores = modelNames.map(n => Math.max(0, data.models[n].metrics.r2 * 100));
+    const bgColors = [COLORS.green, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.pink, '#f59e0b'].map(c => hexToRgba(c, 0.8));
+
+    pieChart = new Chart(ctx, {
+        type: 'pie',
+        data: { labels: modelNames, datasets: [{ data: r2Scores, backgroundColor: bgColors, borderWidth: 2, borderColor: defaults.bgColor }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: defaults.textColor, padding: 12, usePointStyle: true, font: { size: 11 } } },
+                tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, callbacks: { label: ctx => `${ctx.label}: R² ${ctx.parsed.toFixed(1)}%` } }
+            }
+        }
+    });
+}
+
+function renderPieErrorChart(data) {
+    const ctx = document.getElementById('pieErrorChart');
+    if (!ctx) return;
+    if (pieErrorChart) pieErrorChart.destroy();
+    const defaults = getChartDefaults();
+    const modelNames = Object.keys(data.models);
+    const mapeScores = modelNames.map(n => data.models[n].metrics.mape);
+    const bgColors = [COLORS.green, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.pink, '#f59e0b'].map(c => hexToRgba(c, 0.8));
+
+    pieErrorChart = new Chart(ctx, {
+        type: 'pie',
+        data: { labels: modelNames, datasets: [{ data: mapeScores, backgroundColor: bgColors, borderWidth: 2, borderColor: defaults.bgColor }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: defaults.textColor, padding: 12, usePointStyle: true, font: { size: 11 } } },
+                tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, callbacks: { label: ctx => `${ctx.label}: MAPE ${ctx.parsed.toFixed(2)}%` } }
+            }
+        }
+    });
+}
+
+/* ── Radar Chart ─────────────────────────────────────────── */
+function renderRadarChart(data) {
+    const ctx = document.getElementById('radarChart');
+    if (!ctx) return;
+    if (radarChart) radarChart.destroy();
+    const defaults = getChartDefaults();
+    const modelNames = Object.keys(data.models);
+    const radarColors = [COLORS.green, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.pink, '#f59e0b'];
+
+    const datasets = modelNames.map((name, i) => {
+        const m = data.models[name].metrics;
+        return {
+            label: name,
+            data: [
+                m.r2 * 100,
+                Math.max(0, 100 - m.mape),
+                m.directional_accuracy,
+                Math.max(0, 100 - (m.mae / data.current_price * 100)),
+                Math.max(0, 100 - (m.rmse / data.current_price * 100)),
+            ],
+            borderColor: radarColors[i] || COLORS.blue,
+            backgroundColor: hexToRgba(radarColors[i] || COLORS.blue, 0.12),
+            borderWidth: 2,
+            pointBackgroundColor: radarColors[i] || COLORS.blue,
+            pointRadius: 3,
+        };
+    });
+
+    radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: { labels: ['R² Score', 'Accuracy (100-MAPE)', 'Dir. Accuracy', 'MAE Score', 'RMSE Score'], datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: defaults.textColor, padding: 12, usePointStyle: true, font: { size: 11 } } },
+                tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1, callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.r.toFixed(1)}%` } }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true, max: 100,
+                    grid: { color: defaults.gridColor },
+                    angleLines: { color: defaults.gridColor },
+                    pointLabels: { color: defaults.textColor, font: { size: 11 } },
+                    ticks: { color: defaults.textColor, backdropColor: 'transparent', font: { size: 9 }, stepSize: 20 }
+                }
+            }
+        }
+    });
+}
+
+/* ── Doughnut Charts ─────────────────────────────────────── */
+function renderDoughnutChart(data) {
+    const ctx = document.getElementById('doughnutChart');
+    if (!ctx) return;
+    if (doughnutChart) doughnutChart.destroy();
+    const defaults = getChartDefaults();
+    const modelNames = Object.keys(data.models);
+    const r2Scores = modelNames.map(n => Math.max(0, data.models[n].metrics.r2 * 100));
+    const bgColors = [COLORS.green, COLORS.purple, COLORS.cyan, COLORS.orange, COLORS.pink, '#f59e0b'].map(c => hexToRgba(c, 0.8));
+
+    doughnutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: modelNames, datasets: [{ data: r2Scores, backgroundColor: bgColors, borderWidth: 2, borderColor: defaults.bgColor, cutout: '55%' }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: defaults.textColor, padding: 12, usePointStyle: true, font: { size: 11 } } },
+                tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, callbacks: { label: ctx => `${ctx.label}: R² ${ctx.parsed.toFixed(1)}%` } }
+            }
+        }
+    });
+}
+
+function renderDoughnutFeatureChart(data) {
+    const ctx = document.getElementById('doughnutFeatureChart');
+    if (!ctx) return;
+    if (doughnutFeatureChart) doughnutFeatureChart.destroy();
+    const defaults = getChartDefaults();
+    const features = data.models['Random Forest']?.feature_importance;
+    if (!features) return;
+
+    const labels = Object.keys(features);
+    const values = Object.values(features).map(v => v * 100);
+    const bgColors = labels.map((_, i) => hexToRgba(COLORS.blue, 1 - i * 0.1));
+
+    doughnutFeatureChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderWidth: 2, borderColor: defaults.bgColor, cutout: '50%' }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: defaults.textColor, padding: 10, usePointStyle: true, font: { size: 10 } } },
+                tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed.toFixed(2)}%` } }
+            }
+        }
+    });
+}
+
+/* ── Helper: hex to rgba ─────────────────────────────────── */
+function hexToRgba(hex, alpha) {
+    if (hex.startsWith('rgba') || hex.startsWith('rgb')) return hex.replace(/[\d.]+\)$/, alpha + ')');
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+    const r = parseInt(c.substring(0,2), 16);
+    const g = parseInt(c.substring(2,4), 16);
+    const b = parseInt(c.substring(4,6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ── Helper: shared line/area chart options ───────────────── */
+function chartLineOpts(defaults) {
+    return {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { labels: { color: defaults.textColor, usePointStyle: true, padding: 10, font: { size: 11 } }, position: 'top' },
+            tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1, callbacks: { label: ctx => `${ctx.dataset.label}: ${formatPrice(ctx.parsed.y)}` } }
+        },
+        scales: {
+            x: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, maxTicksLimit: 12, font: { size: 10 } } },
+            y: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, font: { size: 10 }, callback: v => formatPrice(v) }, position: 'right' },
+        }
+    };
 }
 
 /* ── View Toggle ─────────────────────────────────────────── */

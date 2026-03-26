@@ -6,6 +6,7 @@ let compareChart = null, absoluteChart = null;
 let taggedSymbols = [];
 let lastCompareData = null;   // stored so text view can re-render
 let currentView = 'graph';
+let compareChartType = 'line';
 
 document.addEventListener('DOMContentLoaded', () => {
     initCommon();
@@ -215,19 +216,34 @@ function renderNormalizedChart(data, symbols) {
     const defaults = getChartDefaults();
     const firstSymbol = symbols[0];
     const dates = data[firstSymbol].dates;
+    const isArea = compareChartType === 'area';
+    const isBar  = compareChartType === 'bar';
     
-    const datasets = symbols.map((sym, i) => ({
-        label: sym,
-        data: data[sym].normalized,
-        borderColor: CHART_COLORS[i % CHART_COLORS.length],
-        borderWidth: 2,
-        tension: 0.3,
-        pointRadius: 0,
-        pointHitRadius: 10,
-    }));
+    const datasets = symbols.map((sym, i) => {
+        const color = CHART_COLORS[i % CHART_COLORS.length];
+        if (isBar) {
+            return {
+                label: sym,
+                data: data[sym].normalized,
+                backgroundColor: color.replace(')', ',0.55)').replace('rgb', 'rgba'),
+                borderRadius: 2,
+            };
+        }
+        return {
+            label: sym,
+            data: data[sym].normalized,
+            borderColor: color,
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHitRadius: 10,
+            fill: isArea,
+            ...(isArea ? { backgroundColor: color.replace(')', ',0.1)').replace('rgb', 'rgba') } : {}),
+        };
+    });
     
     compareChart = new Chart(ctx, {
-        type: 'line',
+        type: isBar ? 'bar' : 'line',
         data: { labels: dates, datasets },
         options: {
             responsive: true,
@@ -260,18 +276,33 @@ function renderAbsoluteChart(data, symbols) {
     const defaults = getChartDefaults();
     const firstSymbol = symbols[0];
     const dates = data[firstSymbol].dates;
+    const isArea = compareChartType === 'area';
+    const isBar  = compareChartType === 'bar';
     
-    const datasets = symbols.map((sym, i) => ({
-        label: sym,
-        data: data[sym].close,
-        borderColor: CHART_COLORS[i % CHART_COLORS.length],
-        borderWidth: 2,
-        tension: 0.3,
-        pointRadius: 0,
-    }));
+    const datasets = symbols.map((sym, i) => {
+        const color = CHART_COLORS[i % CHART_COLORS.length];
+        if (isBar) {
+            return {
+                label: sym,
+                data: data[sym].close,
+                backgroundColor: color.replace(')', ',0.55)').replace('rgb', 'rgba'),
+                borderRadius: 2,
+            };
+        }
+        return {
+            label: sym,
+            data: data[sym].close,
+            borderColor: color,
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 0,
+            fill: isArea,
+            ...(isArea ? { backgroundColor: color.replace(')', ',0.1)').replace('rgb', 'rgba') } : {}),
+        };
+    });
     
     absoluteChart = new Chart(ctx, {
-        type: 'line',
+        type: isBar ? 'bar' : 'line',
         data: { labels: dates, datasets },
         options: {
             responsive: true,
@@ -318,6 +349,19 @@ function renderCompareTable(data, symbols) {
         `;
     }).join('');
 }
+
+/* ── Chart Type Switching ─────────────────────────────── */
+function switchCompareChartType(type) {
+    compareChartType = type;
+    const sel = document.getElementById('compareChartType');
+    if (sel && sel.value !== type) sel.value = type;
+    if (lastCompareData) {
+        const symbols = Object.keys(lastCompareData);
+        renderNormalizedChart(lastCompareData, symbols);
+        renderAbsoluteChart(lastCompareData, symbols);
+    }
+}
+window.switchCompareChartType = switchCompareChartType;
 
 /* ── View Toggle ─────────────────────────────────────── */
 function switchView(view) {

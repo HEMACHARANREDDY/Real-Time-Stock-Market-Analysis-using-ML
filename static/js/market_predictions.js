@@ -10,6 +10,7 @@ let returnsBarChart     = null;
 let ffChart             = null;   // single future-forecast chart
 let stockNames          = {};
 let lastForecastDays    = 30;
+let marketChartType     = 'default';
 
 document.addEventListener('DOMContentLoaded', () => {
     initCommon();
@@ -349,46 +350,68 @@ function renderSignalPieChart(buy, hold, sell) {
     if (signalPieChart) signalPieChart.destroy();
     
     const defaults = getChartDefaults();
-    
-    signalPieChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Buy / Strong Buy', 'Hold', 'Sell / Strong Sell'],
-            datasets: [{
-                data: [buy, hold, sell],
-                backgroundColor: [
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(245, 158, 11, 0.8)',
-                    'rgba(239, 68, 68, 0.8)',
-                ],
-                borderColor: [
-                    'rgba(16, 185, 129, 1)',
-                    'rgba(245, 158, 11, 1)',
-                    'rgba(239, 68, 68, 1)',
-                ],
-                borderWidth: 2,
-                hoverOffset: 8,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '55%',
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { color: defaults.textColor, padding: 15, usePointStyle: true, font: { size: 12 } }
-                },
-                tooltip: {
-                    backgroundColor: defaults.bgColor,
-                    titleColor: defaults.textColor,
-                    bodyColor: defaults.textColor,
-                    borderColor: 'rgba(148,163,184,0.2)',
-                    borderWidth: 1,
+    const labels = ['Buy / Strong Buy', 'Hold', 'Sell / Strong Sell'];
+    const dataVals = [buy, hold, sell];
+    const bgColors = [
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(239, 68, 68, 0.8)',
+    ];
+    const borderColors = [
+        'rgba(16, 185, 129, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(239, 68, 68, 1)',
+    ];
+
+    // Choose chart type based on dropdown
+    let chartConfig;
+    if (marketChartType === 'bar') {
+        chartConfig = {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{ data: dataVals, backgroundColor: bgColors, borderColor: borderColors, borderWidth: 1, borderRadius: 6 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1 } },
+                scales: { x: { grid: { display: false }, ticks: { color: defaults.textColor } }, y: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, stepSize: 1 } } }
+            }
+        };
+    } else if (marketChartType === 'radar') {
+        chartConfig = {
+            type: 'radar',
+            data: {
+                labels,
+                datasets: [{ label: 'Signal Distribution', data: dataVals, backgroundColor: 'rgba(59,130,246,0.2)', borderColor: COLORS.blue, borderWidth: 2, pointBackgroundColor: bgColors, pointRadius: 5 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { r: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, stepSize: 1 }, pointLabels: { color: defaults.textColor, font: { size: 12 } } } }
+            }
+        };
+    } else {
+        // default = doughnut; also used for 'doughnut' option
+        const isDoughnutOnly = marketChartType === 'doughnut';
+        chartConfig = {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{ data: dataVals, backgroundColor: bgColors, borderColor: borderColors, borderWidth: 2, hoverOffset: 8 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                cutout: isDoughnutOnly ? '65%' : '55%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: defaults.textColor, padding: 15, usePointStyle: true, font: { size: 12 } } },
+                    tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1 }
                 }
             }
-        }
-    });
+        };
+    }
+    
+    signalPieChart = new Chart(ctx, chartConfig);
 }
 
 function renderReturnsChart(stocks) {
@@ -404,40 +427,71 @@ function renderReturnsChart(stocks) {
     const labels = top.map(([sym, s]) => s.name || stockNames[sym] || sym);
     const values = top.map(([_, s]) => s.price_change_pct);
     const colors = values.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)');
-    
-    returnsBarChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Predicted Return %',
-                data: values,
-                backgroundColor: colors,
-                borderRadius: 4,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: 'y',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: defaults.bgColor,
-                    titleColor: defaults.textColor,
-                    bodyColor: defaults.textColor,
-                    borderColor: 'rgba(148,163,184,0.2)',
-                    borderWidth: 1,
-                    callbacks: { label: ctx => `${ctx.parsed.x >= 0 ? '+' : ''}${ctx.parsed.x.toFixed(2)}%` }
-                }
+
+    let chartConfig;
+    if (marketChartType === 'radar') {
+        chartConfig = {
+            type: 'radar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Predicted Return %',
+                    data: values,
+                    backgroundColor: 'rgba(59,130,246,0.15)',
+                    borderColor: COLORS.blue,
+                    borderWidth: 2,
+                    pointBackgroundColor: colors,
+                    pointRadius: 4,
+                }]
             },
-            scales: {
-                x: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, callback: v => v + '%' }},
-                y: { grid: { display: false }, ticks: { color: defaults.textColor, font: { size: 11, weight: '600' } }},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { r: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor }, pointLabels: { color: defaults.textColor, font: { size: 9 } } } }
             }
-        }
-    });
+        };
+    } else {
+        // default / bar / doughnut all use horizontal bar for returns (bar is most readable)
+        chartConfig = {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Predicted Return %', data: values, backgroundColor: colors, borderRadius: 4 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: defaults.bgColor, titleColor: defaults.textColor, bodyColor: defaults.textColor, borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1, callbacks: { label: ctx => `${ctx.parsed.x >= 0 ? '+' : ''}${ctx.parsed.x.toFixed(2)}%` } }
+                },
+                scales: {
+                    x: { grid: { color: defaults.gridColor }, ticks: { color: defaults.textColor, callback: v => v + '%' } },
+                    y: { grid: { display: false }, ticks: { color: defaults.textColor, font: { size: 11, weight: '600' } } },
+                }
+            }
+        };
+    }
+    
+    returnsBarChart = new Chart(ctx, chartConfig);
 }
+
+/* ── Chart Type Switching ────────────────────────── */
+function switchMarketChartType(type) {
+    marketChartType = type;
+    const sel = document.getElementById('marketChartType');
+    if (sel && sel.value !== type) sel.value = type;
+
+    const stocks = Object.entries(allPredictionData);
+    if (!stocks.length) return;
+
+    let buyCount = 0, holdCount = 0, sellCount = 0;
+    stocks.forEach(([_, s]) => {
+        if (s.signal.includes('BUY')) buyCount++;
+        else if (s.signal.includes('SELL')) sellCount++;
+        else holdCount++;
+    });
+
+    renderSignalPieChart(buyCount, holdCount, sellCount);
+    renderReturnsChart(stocks);
+}
+window.switchMarketChartType = switchMarketChartType;
 
 
 // ─────────────────────────────────────────────────────────────

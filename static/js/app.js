@@ -109,6 +109,13 @@ function initSidebar() {
             if (window.innerWidth > 768) {
                 sidebar.classList.toggle('collapsed');
                 if (mainContent) mainContent.classList.toggle('expanded');
+                // Swap icon: bars ↔ chevron-right
+                const icon = toggle.querySelector('i');
+                if (icon) {
+                    icon.className = sidebar.classList.contains('collapsed')
+                        ? 'fas fa-chevron-right'
+                        : 'fas fa-bars';
+                }
             } else {
                 openMobileSidebar();
             }
@@ -126,7 +133,11 @@ function initSidebar() {
 
     // --- Inject mobile hamburger button into topbar-left ---
     const topbarLeft = document.querySelector('.topbar-left');
-    if (topbarLeft && !document.getElementById('mobileMenuBtn')) {
+    const existingMobileBtn = document.getElementById('mobileMenuBtn');
+    if (existingMobileBtn) {
+        // Button already exists in HTML — just attach the handler
+        existingMobileBtn.addEventListener('click', openMobileSidebar);
+    } else if (topbarLeft) {
         const mobileBtn = document.createElement('button');
         mobileBtn.id = 'mobileMenuBtn';
         mobileBtn.className = 'mobile-menu-btn';
@@ -242,23 +253,163 @@ function updateMarketStatus() {
 }
 
 
-// ── Stock Search ──
+// ── Stock Search with Autocomplete ──
+let _stockList = null;   // [{sym, name, cat}, ...]
+
+async function loadStockList() {
+    if (_stockList) return _stockList;
+    try {
+        const res = await fetch('/api/stock-categories');
+        const data = await res.json();
+        const names = data.stock_names || {};
+        const cats  = data.categories || {};
+        const list  = [];
+        for (const [cat, syms] of Object.entries(cats)) {
+            for (const sym of syms) {
+                list.push({ sym, name: names[sym] || sym, cat });
+            }
+        }
+        _stockList = list;
+        return list;
+    } catch (e) {
+        console.error('Failed to load stock list', e);
+        return [];
+    }
+}
+
+function attachAutocomplete(input, onSelect) {
+    // Create dropdown container
+    let listEl = input.parentElement.querySelector('.autocomplete-list');
+    if (!listEl) {
+        listEl = document.createElement('div');
+        listEl.className = 'autocomplete-list';
+        input.parentElement.style.position = 'relative';
+        input.parentElement.appendChild(listEl);
+    }
+    let activeIdx = -1;
+
+    function renderItems(items) {
+        activeIdx = -1;
+        if (!items.length) { listEl.innerHTML = ''; return; }
+        listEl.innerHTML = items.slice(0, 12).map((s, i) =>
+            `<div class="autocomplete-item" data-idx="${i}" data-sym="${s.sym}">
+                <span class="ac-sym">${s.sym}</span>
+                <span class="ac-name">${s.name}</span>
+                <span class="ac-cat">${s.cat}</span>
+            </div>`
+        ).join('');
+    }
+
+    function pick(sym) {
+        input.value = sym;
+        listEl.innerHTML = '';
+        if (onSelect) onSelect(sym);
+    }
+
+    function highlight(idx) {
+        const items = listEl.querySelectorAll('.autocomplete-item');
+        items.forEach(el => el.classList.remove('active'));
+        if (idx >= 0 && idx < items.length) {
+            items[idx].classList.add('active');
+            items[idx].scrollIntoView({ block: 'nearest' });
+        }
+        activeIdx = idx;
+    }
+
+    input.addEventListener('input', async () => {
+        const q = input.value.trim().toLowerCase();
+        if (q.length < 1) { listEl.innerHTML = ''; return; }
+        const stocks = await loadStockList();
+        const matches = stocks.filter(s =>
+            s.sym.toLowerCase().includes(q) ||
+            s.name.toLowerCase().includes(q)
+        );
+        renderItems(matches);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        const items = listEl.querySelectorAll('.autocomplete-item');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlight(Math.min(activeIdx + 1, items.length - 1));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlight(Math.max(activeIdx - 1, 0));
+        } else if (e.key === 'Enter' && activeIdx >= 0) {
+            e.preventDefault();
+            pick(items[activeIdx].dataset.sym);
+        } else if (e.key === 'Escape') {
+            listEl.innerHTML = '';
+        }
+    });
+
+    listEl.addEventListener('click', (e) => {
+        const item = e.target.closest('.autocomplete-item');
+        if (item) pick(item.dataset.sym);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !listEl.contains(e.target)) {
+            listEl.innerHTML = '';
+        }
+    });
+}
+
 function initSearch() {
-    const input = document.getElementById('stockSearch');
-    if (input) {
-        input.addEventListener('keydown', (e) => {
+    // Sidebar search (all pages)
+    const sidebarInput = document.getElementById('stockSearch');
+    if (sidebarInput) {
+        attachAutocomplete(sidebarInput, (sym) => {
+            currentSymbol = sym;
+            if (typeof loadStockData === 'function') loadStockData(sym);
+            if (typeof runAnalysis === 'function') {
+                const analInput = document.getElementById('analysisSymbol');
+                if (analInput) analInput.value = sym;
+                runAnalysis(sym);
+            }
+            showToast(`Loading data for ${sym}...`, 'info');
+        });
+
+        // Keep Enter key working for manual entry too
+        sidebarInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                const sym = input.value.trim().toUpperCase();
+                const acItems = sidebarInput.parentElement.querySelectorAll('.autocomplete-item.active');
+                if (acItems.length) return; // autocomplete handled it
+                const sym = sidebarInput.value.trim().toUpperCase();
                 if (sym) {
                     currentSymbol = sym;
                     if (typeof loadStockData === 'function') loadStockData(sym);
                     if (typeof runAnalysis === 'function') {
-                        document.getElementById('analysisSymbol').value = sym;
+                        const analInput = document.getElementById('analysisSymbol');
+                        if (analInput) analInput.value = sym;
                         runAnalysis(sym);
                     }
                     showToast(`Loading data for ${sym}...`, 'info');
+                    // Close autocomplete
+                    const list = sidebarInput.parentElement.querySelector('.autocomplete-list');
+                    if (list) list.innerHTML = '';
                 }
             }
+        });
+    }
+
+    // Analysis page symbol input
+    const analysisInput = document.getElementById('analysisSymbol');
+    if (analysisInput) {
+        attachAutocomplete(analysisInput, (sym) => {
+            if (typeof runAnalysis === 'function') runAnalysis(sym);
+        });
+    }
+
+    // Compare page tag typing input
+    const tagTyping = document.getElementById('tagTyping');
+    if (tagTyping) {
+        attachAutocomplete(tagTyping, (sym) => {
+            if (typeof addTag === 'function') addTag(sym);
+            tagTyping.value = '';
         });
     }
 }
@@ -299,15 +450,30 @@ async function initDashboard() {
         });
     });
     
-    // Chart type buttons
-    document.querySelectorAll('.chart-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            chartType = btn.dataset.type;
-            loadStockData(currentSymbol, currentPeriod);
+    // Chart type dropdown
+    const dashChartSel = document.getElementById('dashChartType');
+    if (dashChartSel) {
+        dashChartSel.addEventListener('change', () => {
+            chartType = dashChartSel.value;
+            if (lastDashData) {
+                renderMainChart(lastDashData);
+            } else {
+                loadStockData(currentSymbol, currentPeriod);
+            }
         });
-    });
+    }
+
+    // Also expose globally for onchange attribute
+    window.switchDashChartType = function(type) {
+        chartType = type;
+        const sel = document.getElementById('dashChartType');
+        if (sel && sel.value !== type) sel.value = type;
+        if (lastDashData) {
+            renderMainChart(lastDashData);
+        } else {
+            loadStockData(currentSymbol, currentPeriod);
+        }
+    };
     
     // Refresh button
     const refreshBtn = document.getElementById('refreshBtn');
@@ -457,6 +623,17 @@ function renderMainChart(data) {
             pointRadius: 0,
             fill: false,
         }];
+    } else if (chartType === 'bar') {
+        const barColors = data.close.map((close, i) => {
+            if (i === 0) return COLORS.blueAlpha;
+            return close >= data.close[i-1] ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+        });
+        datasets = [{
+            label: currentSymbol,
+            data: data.close,
+            backgroundColor: barColors,
+            borderRadius: 3,
+        }];
     } else {
         datasets = [{
             label: currentSymbol,
@@ -472,8 +649,9 @@ function renderMainChart(data) {
         }];
     }
     
+    const isBar = chartType === 'bar';
     mainChart = new Chart(ctx, {
-        type: 'line',
+        type: isBar ? 'bar' : 'line',
         data: { labels: data.dates, datasets },
         options: {
             responsive: true,
