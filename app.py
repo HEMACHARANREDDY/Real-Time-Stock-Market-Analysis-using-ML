@@ -175,7 +175,6 @@ google = oauth.register(
     client_id=os.environ.get('GOOGLE_CLIENT_ID', ''),
     client_secret=os.environ.get('GOOGLE_CLIENT_SECRET', ''),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    redirect_uri=os.environ.get('REDIRECT_URI'),
     client_kwargs={'scope': 'openid email profile'},
 )
 
