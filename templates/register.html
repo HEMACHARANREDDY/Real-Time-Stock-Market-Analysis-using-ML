@@ -15,20 +15,20 @@
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg-primary: #0a0e17;
-            --bg-card: #1a1f2e;
-            --bg-input: #1e2433;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
+            --bg-primary: #080c14;
+            --bg-card: #141b2d;
+            --bg-input: #1a2236;
+            --text-primary: #f0f6ff;
+            --text-secondary: #8b9ec7;
+            --text-muted: #546282;
+            --accent-blue: #4f8eff;
+            --accent-purple: #9b6dff;
             --accent-cyan: #06b6d4;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --border-color: rgba(148, 163, 184, 0.1);
-            --border-highlight: rgba(59, 130, 246, 0.4);
-            --gradient-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --accent-green: #12e8a0;
+            --accent-red: #ff4d6a;
+            --border-color: rgba(100, 130, 200, 0.12);
+            --border-highlight: rgba(79, 142, 255, 0.4);
+            --gradient-primary: linear-gradient(135deg, #4f8eff, #9b6dff);
             --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.7);
             --font-sans: 'Inter', -apple-system, sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
@@ -39,6 +39,7 @@
             font-family: var(--font-sans);
             background: var(--bg-primary);
             color: var(--text-primary);
+            font-weight: 700;
             overflow-x: hidden;
         }
 
@@ -637,25 +638,36 @@
     // ── Market Status ──
     function updateMarketStatus() {
         const now = new Date();
+
+        // US session: Mon-Fri 09:30-16:00 ET
         const etParts = new Intl.DateTimeFormat('en-US', {
             timeZone: 'America/New_York',
-            weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
+            weekday: 'short',
             hour: 'numeric', minute: 'numeric', hour12: false
         }).formatToParts(now);
         const get = (type) => etParts.find(p => p.type === type)?.value || '';
-        const dayStr  = get('weekday');
-        const hour    = parseInt(get('hour'));
-        const minute  = parseInt(get('minute'));
-        const dateStr = `${get('year')}-${get('month')}-${get('day')}`;
-        const isWeekend = dayStr === 'Sat' || dayStr === 'Sun';
-        const timeMin   = hour * 60 + minute;
-        const inHours   = timeMin >= 9 * 60 + 30 && timeMin < 16 * 60;
-        const holidays  = new Set([
-            '2026-01-01','2026-01-19','2026-02-16','2026-04-03',
-            '2026-05-25','2026-07-03','2026-09-07','2026-11-26',
-            '2026-11-27','2026-12-25',
-        ]);
-        const isOpen = !isWeekend && !holidays.has(dateStr) && inHours;
+        const usDayStr = get('weekday');
+        const usHour = parseInt(get('hour'));
+        const usMinute = parseInt(get('minute'));
+        const usIsWeekend = usDayStr === 'Sat' || usDayStr === 'Sun';
+        const usMin = usHour * 60 + usMinute;
+        const usOpen = !usIsWeekend && usMin >= 9 * 60 + 30 && usMin < 16 * 60;
+
+        // India session: Mon-Fri 09:15-15:30 IST
+        const istParts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Kolkata',
+            weekday: 'short',
+            hour: 'numeric', minute: 'numeric', hour12: false
+        }).formatToParts(now);
+        const getIst = (type) => istParts.find(p => p.type === type)?.value || '';
+        const istDayStr = getIst('weekday');
+        const istHour = parseInt(getIst('hour'));
+        const istMinute = parseInt(getIst('minute'));
+        const istIsWeekend = istDayStr === 'Sat' || istDayStr === 'Sun';
+        const istMin = istHour * 60 + istMinute;
+        const indiaOpen = !istIsWeekend && istMin >= 9 * 60 + 15 && istMin < 15 * 60 + 30;
+
+        const isOpen = usOpen || indiaOpen;
         const dot   = document.getElementById('marketDot');
         const label = document.getElementById('marketLabel');
         if (dot)   dot.className   = isOpen ? 'status-dot' : 'status-dot closed';

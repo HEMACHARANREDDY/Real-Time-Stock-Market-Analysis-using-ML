@@ -25,341 +25,304 @@
     <meta name="twitter:image" content="https://real-time-stock-market-analysis-using-ml.onrender.com/static/og-image.png">
     <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/header.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="/dashboard" style="text-decoration:none;">
-            <div class="logo">
-                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg></div>
-                <div class="logo-text"><h1>S Pulse</h1><span class="logo-badge">AI</span></div>
-            </div>
-            </a>
-            <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-        </div>
-        <div class="sidebar-search">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
-                <kbd>Enter</kbd>
-            </div>
-        </div>
-        <ul class="nav-menu">
-            <li class="nav-item"><a href="/dashboard" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="/analysis" class="nav-link"><i class="fas fa-chart-bar"></i><span>Technical Analysis</span></a></li>
-            <li class="nav-item active"><a href="/predictions" class="nav-link"><i class="fas fa-brain"></i><span>ML Predictions</span></a></li>
-            <li class="nav-item"><a href="/market-predictions" class="nav-link"><i class="fas fa-globe"></i><span>Market Predictions</span></a></li>
-            <li class="nav-item"><a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i><span>Compare Stocks</span></a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
-                <div class="user-details">
-                    <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
-                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
-                </div>
-            </div>
-            <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
-            <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
-        </div>
-    </nav>
+    {% include 'shared/header.html' %}
 
-    <main class="main-content">
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+    <div class="main-content-wrapper">
+        <div class="main-content">
+            <div class="page-header">
                 <div>
                     <h2 class="page-title">ML Price Predictions</h2>
                     <span class="page-subtitle" id="currentDate"></span>
                 </div>
             </div>
-            <div class="topbar-right">
-                {% if not is_subscribed %}
-                <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Go Pro
-                </a>
-                {% endif %}
-                <div class="topbar-actions">
-                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+
+            <div class="page-hero-strip">
+                <div class="page-hero-content">
+                    <div class="page-hero-title">AI Forecast Engine</div>
+                    <div class="page-hero-subtitle">Compare multiple ML models and view bold forecast visuals aligned for faster interpretation.</div>
                 </div>
             </div>
-        </header>
 
-        <!-- Prediction Controls -->
-        <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-            <div class="analysis-controls">
-                <div class="control-group">
-                    <label>Stock Symbol</label>
-                    <select id="predSymbol" class="form-input">
-                        {% for category, symbols in stock_categories.items() %}
-                        <optgroup label="{{ category }}">
-                            {% for sym in symbols %}
-                            <option value="{{ sym }}"{% if sym == 'AAPL' %} selected{% endif %}>{{ sym }} — {{ stock_names.get(sym, sym) }}</option>
+            <!-- Prediction Controls -->
+            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="analysis-controls">
+                    <div class="control-group">
+                        <label>Stock Symbol</label>
+                        <select id="predSymbol" class="form-input">
+                            {% for category, symbols in stock_categories.items() %}
+                            <optgroup label="{{ category }}">
+                                {% for sym in symbols %}
+                                <option value="{{ sym }}"{% if sym == 'AAPL' %} selected{% endif %}>{{ sym }} — {{ stock_names.get(sym, sym) }}</option>
+                                {% endfor %}
+                            </optgroup>
                             {% endfor %}
-                        </optgroup>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label>Forecast Days</label>
-                    <select id="forecastDays" class="form-input">
-                        <option value="7">7 Days</option>
-                        <option value="14">14 Days</option>
-                        <option value="30" selected>30 Days</option>
-                        <option value="60">60 Days</option>
-                        <option value="90">90 Days</option>
-                    </select>
-                </div>
-                <button class="btn-primary" id="predictBtn">
-                    <i class="fas fa-brain"></i> Run ML Models
-                </button>
-            </div>
-            <div class="ml-info-bar">
-                <span><i class="fas fa-cogs"></i> Models: Random Forest, Gradient Boosting, Ridge, SVR, Linear Regression, Ensemble</span>
-            </div>
-        </div>
-
-        <!-- Loading State -->
-        <div class="prediction-loading glass-card" id="predictionLoading" style="display:none;">
-            <div class="loading-content">
-                <div class="spinner large"></div>
-                <h3>Training ML Models...</h3>
-                <p>Analyzing historical data and generating predictions. This may take 15-30 seconds.</p>
-                <div class="loading-steps" id="loadingSteps">
-                    <div class="step active"><i class="fas fa-database"></i> Fetching data</div>
-                    <div class="step"><i class="fas fa-cogs"></i> Engineering features</div>
-                    <div class="step"><i class="fas fa-brain"></i> Training models</div>
-                    <div class="step"><i class="fas fa-chart-line"></i> Generating forecasts</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Results Section -->
-        <div id="predictionResults" style="display:none;">
-            <!-- Best Model Banner -->
-            <div class="glass-card best-model-banner" id="bestModelBanner">
-                <div class="banner-content">
-                    <div class="banner-icon"><i class="fas fa-trophy"></i></div>
-                    <div class="banner-info">
-                        <h3>Best Model: <span id="bestModelName">--</span></h3>
-                        <p id="bestModelMetrics">--</p>
+                        </select>
                     </div>
-                    <div class="banner-stats">
-                        <div class="banner-stat">
-                            <span class="label">Current Price</span>
-                            <span class="value" id="predCurrentPrice">--</span>
-                        </div>
-                        <div class="banner-stat">
-                            <span class="label">Predicted (30d)</span>
-                            <span class="value" id="pred30dPrice">--</span>
-                        </div>
-                        <div class="banner-stat">
-                            <span class="label">Expected Change</span>
-                            <span class="value" id="predChange">--</span>
-                        </div>
+                    <div class="control-group">
+                        <label>Forecast Days</label>
+                        <select id="forecastDays" class="form-input">
+                            <option value="7">7 Days</option>
+                            <option value="14">14 Days</option>
+                            <option value="30" selected>30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90">90 Days</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-
-            <!-- Model Comparison Cards -->
-            <div class="model-cards" id="modelCards"></div>
-
-            <!-- View Toggle -->
-            <div class="view-toggle-bar" style="margin-bottom:1.25rem;">
-                <div class="view-toggle-group">
-                    <button class="view-toggle-btn active" id="btnPredGraph" onclick="switchPredView('graph')">
-                        <i class="fas fa-chart-area"></i> Graph View
-                    </button>
-                    <button class="view-toggle-btn" id="btnPredText" onclick="switchPredView('text')">
-                        <i class="fas fa-file-lines"></i> Text Report
+                    <button class="btn-primary" id="predictBtn">
+                        <i class="fas fa-brain"></i> Run ML Models
                     </button>
                 </div>
-                <span class="view-toggle-hint">Switch to Text Report if charts don't load</span>
-            </div>
-
-            <!-- GRAPH VIEW -->
-            <div id="predGraphView">
-
-            <!-- Chart Type Selector -->
-            <div class="analysis-controls" style="margin-bottom:1.25rem;">
-                <div class="control-group">
-                    <label>Chart Type</label>
-                    <select id="chartTypeSelect" class="form-input" onchange="switchChartType(this.value)">
-                        <option value="line" selected>📈  Line Chart</option>
-                        <option value="area">🌊  Area Chart</option>
-                        <option value="bar">📊  Bar Chart</option>
-                        <option value="pie">🥧  Pie Chart</option>
-                        <option value="radar">🎯  Radar Chart</option>
-                        <option value="doughnut">🍩  Doughnut Chart</option>
-                    </select>
+                <div class="ml-info-bar">
+                    <span><i class="fas fa-cogs"></i> Models: Random Forest, Gradient Boosting, Ridge, SVR, Linear Regression, Ensemble</span>
                 </div>
             </div>
 
-            <!-- LINE / AREA / BAR chart panels -->
-            <div id="chartPanel_line" class="chart-panel">
-                <div class="content-grid prediction-grid">
-                    <div class="glass-card chart-full">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-line"></i> Actual vs Predicted Prices</h3>
-                        </div>
-                        <div class="chart-container large-chart">
-                            <canvas id="predictionChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card chart-full">
-                        <div class="card-header">
-                            <h3><i class="fas fa-crystal-ball"></i> Future Price Forecast</h3>
-                        </div>
-                        <div class="chart-container large-chart">
-                            <canvas id="forecastChart"></canvas>
-                        </div>
+            <!-- Loading State -->
+            <div class="prediction-loading glass-card" id="predictionLoading" style="display:none;">
+                <div class="loading-content">
+                    <div class="spinner large"></div>
+                    <h3>Training ML Models...</h3>
+                    <p>Analyzing historical data and generating predictions. This may take 15-30 seconds.</p>
+                    <div class="loading-steps" id="loadingSteps">
+                        <div class="step active"><i class="fas fa-database"></i> Fetching data</div>
+                        <div class="step"><i class="fas fa-cogs"></i> Engineering features</div>
+                        <div class="step"><i class="fas fa-brain"></i> Training models</div>
+                        <div class="step"><i class="fas fa-chart-line"></i> Generating forecasts</div>
                     </div>
                 </div>
             </div>
 
-            <div id="chartPanel_area" class="chart-panel" style="display:none;">
-                <div class="content-grid prediction-grid">
-                    <div class="glass-card chart-full">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-area"></i> Actual vs Predicted — Area View</h3>
+            <!-- Results Section -->
+            <div id="predictionResults" style="display:none;">
+                <!-- Best Model Banner -->
+                <div class="glass-card best-model-banner" id="bestModelBanner">
+                    <div class="banner-content">
+                        <div class="banner-icon"><i class="fas fa-trophy"></i></div>
+                        <div class="banner-info">
+                            <h3>Best Model: <span id="bestModelName">--</span></h3>
+                            <p id="bestModelMetrics">--</p>
                         </div>
-                        <div class="chart-container large-chart">
-                            <canvas id="areaChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card chart-full">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-area"></i> Forecast — Area View</h3>
-                        </div>
-                        <div class="chart-container large-chart">
-                            <canvas id="areaForecastChart"></canvas>
+                        <div class="banner-stats">
+                            <div class="banner-stat">
+                                <span class="label">Current Price</span>
+                                <span class="value" id="predCurrentPrice">--</span>
+                            </div>
+                            <div class="banner-stat">
+                                <span class="label">Predicted (30d)</span>
+                                <span class="value" id="pred30dPrice">--</span>
+                            </div>
+                            <div class="banner-stat">
+                                <span class="label">Expected Change</span>
+                                <span class="value" id="predChange">--</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="chartPanel_bar" class="chart-panel" style="display:none;">
-                <div class="content-grid prediction-grid">
-                    <div class="glass-card chart-full">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-bar"></i> Model Prediction Comparison — Bar</h3>
-                        </div>
-                        <div class="chart-container large-chart">
-                            <canvas id="barChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card chart-full">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-bar"></i> Forecast Price Range — Bar</h3>
-                        </div>
-                        <div class="chart-container large-chart">
-                            <canvas id="barForecastChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <!-- Model Comparison Cards -->
+                <div class="model-cards" id="modelCards"></div>
 
-            <div id="chartPanel_pie" class="chart-panel" style="display:none;">
-                <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));">
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-pie"></i> Model Accuracy Distribution</h3>
-                        </div>
-                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
-                            <canvas id="pieChart"></canvas>
-                        </div>
+                <!-- View Toggle -->
+                <div class="view-toggle-bar" style="margin-bottom:1.25rem;">
+                    <div class="view-toggle-group">
+                        <button class="view-toggle-btn active" id="btnPredGraph" onclick="switchPredView('graph')">
+                            <i class="fas fa-chart-area"></i> Graph View
+                        </button>
+                        <button class="view-toggle-btn" id="btnPredText" onclick="switchPredView('text')">
+                            <i class="fas fa-file-lines"></i> Text Report
+                        </button>
                     </div>
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-chart-pie"></i> Error Distribution by Model</h3>
-                        </div>
-                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
-                            <canvas id="pieErrorChart"></canvas>
-                        </div>
-                    </div>
+                    <span class="view-toggle-hint">Switch to Text Report if charts don't load</span>
                 </div>
-            </div>
 
-            <div id="chartPanel_radar" class="chart-panel" style="display:none;">
-                <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-crosshairs"></i> Model Performance Radar</h3>
-                        </div>
-                        <div class="chart-container" style="max-width:520px;margin:0 auto;">
-                            <canvas id="radarChart"></canvas>
-                        </div>
+                <!-- GRAPH VIEW -->
+                <div id="predGraphView">
+
+                <!-- Chart Type Selector -->
+                <div class="analysis-controls" style="margin-bottom:1.25rem;">
+                    <div class="control-group">
+                        <label>Chart Type</label>
+                        <select id="chartTypeSelect" class="form-input" onchange="switchChartType(this.value)">
+                            <option value="line" selected>📈  Line Chart</option>
+                            <option value="area">🌊  Area Chart</option>
+                            <option value="bar">📊  Bar Chart</option>
+                            <option value="pie">🥧  Pie Chart</option>
+                            <option value="radar">🎯  Radar Chart</option>
+                            <option value="doughnut">🍩  Doughnut Chart</option>
+                        </select>
                     </div>
                 </div>
-            </div>
 
-            <div id="chartPanel_doughnut" class="chart-panel" style="display:none;">
-                <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));">
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-circle-notch"></i> R² Score Share</h3>
+                <!-- LINE / AREA / BAR chart panels -->
+                <div id="chartPanel_line" class="chart-panel">
+                    <div class="content-grid prediction-grid">
+                        <div class="glass-card chart-full">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-line"></i> Actual vs Predicted Prices</h3>
+                            </div>
+                            <div class="chart-container large-chart">
+                                <canvas id="predictionChart"></canvas>
+                            </div>
                         </div>
-                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
-                            <canvas id="doughnutChart"></canvas>
+                        <div class="glass-card chart-full">
+                            <div class="card-header">
+                                <h3><i class="fas fa-crystal-ball"></i> Future Price Forecast</h3>
+                            </div>
+                            <div class="chart-container large-chart">
+                                <canvas id="forecastChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h3><i class="fas fa-circle-notch"></i> Feature Importance</h3>
+                </div>
+
+                <div id="chartPanel_area" class="chart-panel" style="display:none;">
+                    <div class="content-grid prediction-grid">
+                        <div class="glass-card chart-full">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-area"></i> Actual vs Predicted — Area View</h3>
+                            </div>
+                            <div class="chart-container large-chart">
+                                <canvas id="areaChart"></canvas>
+                            </div>
                         </div>
-                        <div class="chart-container" style="max-width:420px;margin:0 auto;">
-                            <canvas id="doughnutFeatureChart"></canvas>
+                        <div class="glass-card chart-full">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-area"></i> Forecast — Area View</h3>
+                            </div>
+                            <div class="chart-container large-chart">
+                                <canvas id="areaForecastChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Model Metrics Table -->
-            <div class="glass-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-table"></i> Model Performance Comparison</h3>
+                <div id="chartPanel_bar" class="chart-panel" style="display:none;">
+                    <div class="content-grid prediction-grid">
+                        <div class="glass-card chart-full">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-bar"></i> Model Prediction Comparison — Bar</h3>
+                            </div>
+                            <div class="chart-container large-chart">
+                                <canvas id="barChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-card chart-full">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-bar"></i> Forecast Price Range — Bar</h3>
+                            </div>
+                            <div class="chart-container large-chart">
+                                <canvas id="barForecastChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="data-table" id="metricsTable">
-                        <thead>
-                            <tr>
-                                <th>Model</th>
-                                <th>MAE</th>
-                                <th>RMSE</th>
-                                <th>R² Score</th>
-                                <th>MAPE (%)</th>
-                                <th>Directional Acc. (%)</th>
-                                <th>Rating</th>
-                            </tr>
-                        </thead>
-                        <tbody id="metricsBody"></tbody>
-                    </table>
-                </div>
-            </div>
 
-            <!-- Feature Importance -->
-            <div class="glass-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-sort-amount-down"></i> Feature Importance (Random Forest)</h3>
+                <div id="chartPanel_pie" class="chart-panel" style="display:none;">
+                    <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));">
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-pie"></i> Model Accuracy Distribution</h3>
+                            </div>
+                            <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                                <canvas id="pieChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-pie"></i> Error Distribution by Model</h3>
+                            </div>
+                            <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                                <canvas id="pieErrorChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="featureChart"></canvas>
-                </div>
-            </div>
-            </div><!-- /predGraphView -->
 
-            <!-- TEXT VIEW -->
-            <div id="predTextView" style="display:none;">
-                <div class="glass-card" id="predTextReport"></div>
+                <div id="chartPanel_radar" class="chart-panel" style="display:none;">
+                    <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-crosshairs"></i> Model Performance Radar</h3>
+                            </div>
+                            <div class="chart-container" style="max-width:520px;margin:0 auto;">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="chartPanel_doughnut" class="chart-panel" style="display:none;">
+                    <div class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));">
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-circle-notch"></i> R² Score Share</h3>
+                            </div>
+                            <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                                <canvas id="doughnutChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-circle-notch"></i> Feature Importance</h3>
+                            </div>
+                            <div class="chart-container" style="max-width:420px;margin:0 auto;">
+                                <canvas id="doughnutFeatureChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Metrics Table -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-table"></i> Model Performance Comparison</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="metricsTable">
+                            <thead>
+                                <tr>
+                                    <th>Model</th>
+                                    <th>MAE</th>
+                                    <th>RMSE</th>
+                                    <th>R² Score</th>
+                                    <th>MAPE (%)</th>
+                                    <th>Directional Acc. (%)</th>
+                                    <th>Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody id="metricsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Feature Importance -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-sort-amount-down"></i> Feature Importance (Random Forest)</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="featureChart"></canvas>
+                    </div>
+                </div>
+                </div><!-- /predGraphView -->
+
+                <!-- TEXT VIEW -->
+                <div id="predTextView" style="display:none;">
+                    <div class="glass-card" id="predTextReport"></div>
+                </div>
             </div>
         </div>
-    </main>
+    </div>
 
     <div class="toast-container" id="toastContainer"></div>
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/header.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version }}"></script>
     <script src="/static/js/predictions.js"></script>
 </body>
 </html>

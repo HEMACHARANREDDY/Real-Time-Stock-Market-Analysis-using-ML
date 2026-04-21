@@ -6,14 +6,17 @@ Main Flask Application
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for, flash
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
-from functools import wraps
+from functools import wraps, lru_cache
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import requests
 from datetime import datetime, timedelta
+import time
 import json
 import os
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -167,6 +170,48 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 CORS(app)
 
 # ─────────────────────────────────────────────
+# RATE LIMITING
+# ─────────────────────────────────────────────
+def rate_limited(max_per_minute):
+    """Decorator to limit API calls to a certain number per minute."""
+    lock = threading.Lock()
+    calls = []
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            with lock:
+                now = time.time()
+                # Remove calls older than a minute
+                calls[:] = [c for c in calls if c > now - 60]
+                if len(calls) >= max_per_minute:
+                    return jsonify({'error': 'Too Many Requests. Rate limited.'}), 429
+                calls.append(now)
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# ─────────────────────────────────────────────
+# API CACHING
+# ─────────────────────────────────────────────
+def timed_lru_cache(seconds: int, maxsize: int = 128):
+    """Decorator to cache function results with a time-to-live (TTL)."""
+    def wrapper_cache(func):
+        func = lru_cache(maxsize=maxsize)(func)
+        func.ttl = seconds
+        func.expiration = time.time() + seconds
+
+        @wraps(func)
+        def wrapper_func(*args, **kwargs):
+            if time.time() >= func.expiration:
+                func.cache_clear()
+                func.expiration = time.time() + func.ttl
+            return func(*args, **kwargs)
+        return wrapper_func
+    return wrapper_cache
+
+
+# ─────────────────────────────────────────────
 # GOOGLE OAUTH SETUP
 # ─────────────────────────────────────────────
 oauth = OAuth(app)
@@ -223,6 +268,7 @@ SUBSCRIPTION_PRICE_INR = 250  # default / backward-compat
 # Persistent (committed) data file — always present in the repo
 _repo_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 _REPO_SUBS_FILE = os.path.join(_repo_data_dir, 'subscriptions.json')
+_WATCHLISTS_FILE = os.path.join(_repo_data_dir, 'watchlists.json')
 
 # On serverless/read-only deploy (Render/Vercel) also keep a runtime copy in /tmp
 _is_readonly = bool(os.environ.get('VERCEL') or os.environ.get('RENDER'))
@@ -283,10 +329,49 @@ def _save_subscriptions():
 # Users who have purchased a subscription (Text Report & future premium features)
 SUBSCRIBED_USERS, PENDING_REQUESTS = _load_subscriptions()
 
+
+def _load_watchlists():
+    """Load per-user watchlists and portfolio data."""
+    if os.path.exists(_WATCHLISTS_FILE):
+        try:
+            with open(_WATCHLISTS_FILE) as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+    return {}
+
+
+def _save_watchlists(data):
+    """Persist per-user watchlists and portfolio data."""
+    os.makedirs(os.path.dirname(_WATCHLISTS_FILE), exist_ok=True)
+    with open(_WATCHLISTS_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
+
+
+def _normalize_user_key():
+    """Return a stable lowercase key for the logged-in user."""
+    return session.get('username', '').strip().lower()
+
+
+def _get_user_watchlist_bundle(store, user_key):
+    """Ensure user bundle exists and return it."""
+    if user_key not in store or not isinstance(store[user_key], dict):
+        store[user_key] = {'stocks': [], 'portfolio': []}
+    bundle = store[user_key]
+    bundle.setdefault('stocks', [])
+    bundle.setdefault('portfolio', [])
+    return bundle
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get('logged_in'):
+            # API routes should return JSON instead of HTML redirects so frontend
+            # handlers can show actionable messages.
+            if request.path.startswith('/api/'):
+                return jsonify({'error': 'auth_required', 'message': 'Please sign in to continue.'}), 401
             flash('Please sign in to access the dashboard.', 'error')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
@@ -313,6 +398,7 @@ def inject_user():
         'current_user': username or 'Guest',
         'logged_in': session.get('logged_in', False),
         'is_subscribed': username in SUBSCRIBED_USERS,
+        'asset_version': os.environ.get('ASSET_VERSION', '20260403-1'),
     }
 
 # Initialize ML Engine
@@ -490,7 +576,7 @@ def google_callback():
 
 @app.route('/')
 def home():
-    """Redirect to login (or dashboard if already logged in)."""
+    """Route visitors to login and signed-in users to dashboard."""
     if session.get('logged_in'):
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
@@ -513,12 +599,23 @@ def predictions():
 @app.route('/compare')
 @login_required
 def compare():
-    return render_template('compare.html')
+    # Keep compare accessible for all signed-in users.
+    return render_template('compare.html', is_subscribed=True)
 
 @app.route('/market-predictions')
 @login_required
 def market_predictions():
     return render_template('market_predictions.html')
+
+@app.route('/watchlist')
+@login_required
+def watchlist():
+    return render_template('watchlist.html')
+
+@app.route('/heatmap')
+@login_required
+def heatmap():
+    return render_template('heatmap.html')
 
 
 # ─────────────────────────────────────────────
@@ -714,6 +811,264 @@ STOCK_NAMES = {
 }
 
 USD_TO_INR = 83.50  # Approximate USD to INR exchange rate
+_FX_RATE_CACHE = {'rate': USD_TO_INR, 'expires_at': 0}
+_FX_RATE_LOCK = threading.Lock()
+
+
+def get_usd_to_inr_rate(force_refresh=False):
+    """Return USD->INR FX rate using cached live value with safe fallback."""
+    now = time.time()
+    cached_rate = _FX_RATE_CACHE.get('rate', USD_TO_INR)
+    if not force_refresh and now < _FX_RATE_CACHE.get('expires_at', 0):
+        return cached_rate
+
+    with _FX_RATE_LOCK:
+        now = time.time()
+        if not force_refresh and now < _FX_RATE_CACHE.get('expires_at', 0):
+            return _FX_RATE_CACHE.get('rate', USD_TO_INR)
+
+        rate = None
+        try:
+            fx = yf.Ticker('USDINR=X')
+            hist = fx.history(period='5d', interval='1d')
+            if not hist.empty:
+                rate = float(hist['Close'].iloc[-1])
+            if rate in (None, 0) or rate != rate:
+                fast = fx.fast_info
+                rate = float(fast.get('lastPrice') or fast.get('regularMarketPrice') or 0)
+        except Exception:
+            rate = None
+
+        # Guardrail for bad provider payloads.
+        if rate is None or rate != rate or rate <= 0 or rate < 60 or rate > 120:
+            rate = _FX_RATE_CACHE.get('rate', USD_TO_INR) or USD_TO_INR
+
+        _FX_RATE_CACHE['rate'] = round(float(rate), 4)
+        _FX_RATE_CACHE['expires_at'] = now + 900  # 15 minutes
+        return _FX_RATE_CACHE['rate']
+
+# Keep last successful API payloads so UI remains usable during temporary upstream limits.
+_LAST_STOCK_PAYLOAD = {}
+_LAST_TECH_PAYLOAD = {}
+_LAST_LIVE_PAYLOAD = {}
+_LAST_PRED_PAYLOAD = {}
+_LAST_COMPARE_PAYLOAD = {}
+_MARKET_OVERVIEW_CACHE = {'payload': None, 'expires_at': 0}
+_MARKET_OVERVIEW_CACHE_LOCK = threading.Lock()
+
+
+def _fetch_market_snapshot(symbol):
+    """Fetch a compact quote snapshot for dashboard ticker/trending blocks."""
+    try:
+        hist, _meta = _fetch_yahoo_chart_history(symbol, period='5d', interval='1d')
+        if hist.empty or len(hist) < 2:
+            return None
+
+        current = float(hist['Close'].iloc[-1])
+        prev = float(hist['Close'].iloc[-2])
+        if prev == 0:
+            return None
+
+        change = current - prev
+        volume_raw = hist['Volume'].iloc[-1]
+        volume = int(volume_raw) if volume_raw == volume_raw else 0
+
+        return {
+            'symbol': symbol,
+            'price': to_inr(current, symbol),
+            'change': to_inr(change, symbol),
+            'change_pct': round((change / prev) * 100, 2),
+            'volume': volume,
+        }
+    except Exception:
+        return None
+
+
+def _build_stock_fallback(symbol, points=30, base_price=100.0):
+    """Return a safe fallback stock payload when upstream APIs are throttled."""
+    now = datetime.utcnow()
+    dates = [(now - timedelta(days=(points - 1 - i))).strftime('%Y-%m-%d %H:%M') for i in range(points)]
+    price = to_inr(base_price, symbol)
+    close = [price for _ in range(points)]
+    return {
+        'dates': dates,
+        'open': close[:],
+        'high': close[:],
+        'low': close[:],
+        'close': close[:],
+        'volume': [0 for _ in range(points)],
+        'info': {
+            'name': get_stock_name(symbol),
+            'sector': 'N/A',
+            'industry': 'N/A',
+            'marketCap': 0,
+            'peRatio': 0,
+            'dividendYield': 0,
+            'fiftyTwoWeekHigh': price,
+            'fiftyTwoWeekLow': price,
+            'avgVolume': 0,
+            'beta': 0,
+            'eps': 0,
+            'currency': 'INR',
+        },
+        'current_price': price,
+        'prev_close': price,
+        'change': 0,
+        'change_pct': 0,
+        'is_stale': True,
+        'is_fallback': True,
+        'warning': 'Live market data temporarily limited. Showing fallback data.',
+    }
+
+
+def _build_technical_fallback(symbol, points=60, base_price=100.0):
+    """Return neutral technical indicators so charts remain usable."""
+    now = datetime.utcnow()
+    dates = [(now - timedelta(days=(points - 1 - i))).strftime('%Y-%m-%d') for i in range(points)]
+    price = to_inr(base_price, symbol)
+    flat = [price for _ in range(points)]
+    zeros = [0 for _ in range(points)]
+    neutral = [50 for _ in range(points)]
+    return {
+        'dates': dates,
+        'close': flat[:],
+        'sma_20': flat[:],
+        'sma_50': flat[:],
+        'ema_12': flat[:],
+        'ema_26': flat[:],
+        'macd': zeros[:],
+        'macd_signal': zeros[:],
+        'macd_hist': zeros[:],
+        'rsi': neutral[:],
+        'bb_upper': flat[:],
+        'bb_middle': flat[:],
+        'bb_lower': flat[:],
+        'atr': zeros[:],
+        'vwap': flat[:],
+        'stoch_k': neutral[:],
+        'stoch_d': neutral[:],
+        'obv': zeros[:],
+        'volume': zeros[:],
+        'signals': {
+            'overall': 'HOLD',
+            'score': 0,
+            'max_score': 8,
+            'indicators': [
+                {'indicator': 'RSI', 'signal': 'NEUTRAL', 'value': 50, 'reason': 'Fallback data'},
+                {'indicator': 'MACD', 'signal': 'NEUTRAL', 'value': 0, 'reason': 'Fallback data'},
+                {'indicator': 'SMA Cross', 'signal': 'NEUTRAL', 'value': 'N/A', 'reason': 'Fallback data'},
+            ],
+        },
+        'is_stale': True,
+        'is_fallback': True,
+        'warning': 'Technical data temporarily limited. Showing fallback data.',
+    }
+
+
+def _build_prediction_fallback(symbol, days=30, base_price=100.0):
+    """Return safe fallback ML predictions so forecasts remain usable during API limits."""
+    price = to_inr(base_price, symbol)
+    now = datetime.utcnow()
+    
+    future = []
+    for i in range(days):
+        future_date = now + timedelta(days=i + 1)
+        while future_date.weekday() >= 5:
+            future_date += timedelta(days=1)
+        future.append({
+            'date': future_date.strftime('%Y-%m-%d'),
+            'predicted_price': round(price, 2),
+            'upper_bound': round(price * 1.05, 2),
+            'lower_bound': round(price * 0.95, 2),
+            'confidence': max(0.25, 1.0 - i * 0.018),
+        })
+    
+    test_dates = [(now - timedelta(days=(30 - 1 - i))).strftime('%Y-%m-%d') for i in range(30)]
+    actual_prices = [price] * 30
+    
+    return {
+        'symbol': symbol.upper(),
+        'current_price': price,
+        'best_model': 'Ensemble',
+        'test_dates': test_dates,
+        'actual_prices': actual_prices,
+        'future': future,
+        'training_size': 100,
+        'test_size': 30,
+        'features_used': 25,
+        'models': {
+            'Random Forest': {'predictions': actual_prices[:], 'metrics': {'r2': 0.0, 'mae': 0.0, 'mape': 0.0, 'directional_accuracy': 50.0}},
+            'Gradient Boosting': {'predictions': actual_prices[:], 'metrics': {'r2': 0.0, 'mae': 0.0, 'mape': 0.0, 'directional_accuracy': 50.0}},
+            'Ridge Regression': {'predictions': actual_prices[:], 'metrics': {'r2': 0.0, 'mae': 0.0, 'mape': 0.0, 'directional_accuracy': 50.0}},
+            'SVR': {'predictions': actual_prices[:], 'metrics': {'r2': 0.0, 'mae': 0.0, 'mape': 0.0, 'directional_accuracy': 50.0}},
+            'Linear Regression': {'predictions': actual_prices[:], 'metrics': {'r2': 0.0, 'mae': 0.0, 'mape': 0.0, 'directional_accuracy': 50.0}},
+            'Ensemble': {'predictions': actual_prices[:], 'metrics': {'r2': 0.0, 'mae': 0.0, 'mape': 0.0, 'directional_accuracy': 50.0}},
+        },
+        'is_stale': True,
+        'is_fallback': True,
+        'warning': 'ML predictions temporarily limited. This is fallback data with no price change projected.',
+    }
+
+
+def _estimate_base_price(symbol, default_price=100.0):
+    """Estimate a realistic current price in the symbol's source currency."""
+    sym = (symbol or '').upper()
+    try:
+        hist, _meta = _fetch_yahoo_chart_history(sym, period='5d', interval='1d')
+        if not hist.empty:
+            last_close = float(hist['Close'].iloc[-1])
+            if last_close == last_close and last_close > 0:
+                return last_close
+        hist, _meta = _fetch_yahoo_chart_history(sym, period='1d', interval='1m')
+        if not hist.empty:
+            last_close = float(hist['Close'].iloc[-1])
+            if last_close == last_close and last_close > 0:
+                return last_close
+    except Exception:
+        pass
+
+    return float(default_price)
+
+
+def _build_compare_fallback(symbol, period='1y', base_price=100.0):
+    """Return safe compare payload for one symbol when upstream quote source is limited."""
+    points_map = {
+        '1mo': 22,
+        '3mo': 66,
+        '6mo': 132,
+        '1y': 252,
+        '2y': 504,
+        '5y': 1260,
+    }
+    points = max(10, int(points_map.get((period or '1y').lower(), 252)))
+    now = datetime.utcnow()
+
+    dates = []
+    current = now
+    while len(dates) < points:
+        if current.weekday() < 5:
+            dates.append(current.strftime('%Y-%m-%d'))
+        current -= timedelta(days=1)
+    dates.reverse()
+
+    price = round(float(base_price), 2)
+    close = [price] * points
+
+    return {
+        'dates': dates,
+        'close': close,
+        'normalized': [0.0] * points,
+        'volume': [0] * points,
+        'start_price': price,
+        'end_price': price,
+        'total_return': 0.0,
+        'max_price': price,
+        'min_price': price,
+        'avg_volume': 0,
+        'volatility': 0.0,
+        'is_stale': True,
+        'warning': 'Comparison data temporarily limited. Showing fallback series.',
+    }
 
 
 def get_stock_name(symbol):
@@ -723,27 +1078,26 @@ def get_stock_name(symbol):
 
 def is_inr_stock(symbol):
     """Check if stock prices are already in INR"""
-    return symbol.upper().endswith('.NS')
+    sym = (symbol or '').upper()
+    # NSE stocks and Indian indices are already INR-denominated.
+    return sym.endswith('.NS') or sym in {'NSEI', '^NSEI', 'BSESN', '^BSESN'}
 
 
 def to_inr(value, symbol):
-    """Convert a single price value to INR"""
+    """Normalize a single price value without forcing a currency conversion."""
     if value is None:
         return 0
     try:
         val = float(value)
         if val != val:  # NaN check
             return 0
-        if is_inr_stock(symbol):
-            return round(val, 2)
-        return round(val * USD_TO_INR, 2)
+        return round(val, 2)
     except (ValueError, TypeError):
         return 0
 
 
 def list_to_inr(values, symbol):
-    """Convert a list of price values to INR"""
-    rate = 1 if is_inr_stock(symbol) else USD_TO_INR
+    """Normalize a list of price values without forcing a currency conversion."""
     result = []
     for v in values:
         try:
@@ -751,67 +1105,67 @@ def list_to_inr(values, symbol):
             if fv != fv:  # NaN check
                 result.append(0)
             else:
-                result.append(round(fv * rate, 2))
+                result.append(round(fv, 2))
         except (ValueError, TypeError):
             result.append(0)
     return result
 
 
 def convert_stock_data_to_inr(data, symbol):
-    """Convert stock data API response to INR"""
-    if is_inr_stock(symbol):
-        return data
-    rate = USD_TO_INR
-    for key in ['open', 'high', 'low', 'close']:
-        if key in data and isinstance(data[key], list):
-            data[key] = [round(v * rate, 2) for v in data[key]]
-    for key in ['current_price', 'prev_close', 'change']:
-        if key in data:
-            data[key] = round(data[key] * rate, 2)
+    """Normalize stock data API response to native market values."""
     if 'info' in data:
-        for key in ['fiftyTwoWeekHigh', 'fiftyTwoWeekLow', 'eps']:
-            if key in data['info'] and data['info'][key]:
-                data['info'][key] = round(float(data['info'][key]) * rate, 2)
-        if 'marketCap' in data['info'] and data['info']['marketCap']:
-            data['info']['marketCap'] = round(float(data['info']['marketCap']) * rate)
-        data['info']['currency'] = 'INR'
+        data['info']['currency'] = data['info'].get('currency', 'USD')
     return data
 
 
 def convert_technical_to_inr(result, symbol):
-    """Convert technical indicator results to INR"""
-    if is_inr_stock(symbol):
-        return result
-    rate = USD_TO_INR
-    for key in ['close', 'sma_20', 'sma_50', 'ema_12', 'ema_26',
-                'bb_upper', 'bb_middle', 'bb_lower', 'vwap', 'atr',
-                'macd', 'macd_signal', 'macd_hist']:
-        if key in result and isinstance(result[key], list):
-            result[key] = [round(v * rate, 2) for v in result[key]]
+    """Normalize technical indicator results without forcing a currency conversion."""
     return result
 
 
+_YAHOO_CHART_HEADERS = {'User-Agent': 'Mozilla/5.0'}
+
+
+def _fetch_yahoo_chart_history(symbol, period='1mo', interval='1d'):
+    """Fetch chart data directly from Yahoo's chart API."""
+    encoded_symbol = requests.utils.quote((symbol or '').upper(), safe='.')
+    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{encoded_symbol}'
+    params = {
+        'range': period,
+        'interval': interval,
+        'includePrePost': 'false',
+        'events': 'div,splits',
+    }
+    response = requests.get(url, params=params, headers=_YAHOO_CHART_HEADERS, timeout=20)
+    response.raise_for_status()
+    payload = response.json()
+    chart = payload.get('chart', {})
+    error = chart.get('error')
+    if error:
+        raise ValueError(error.get('description') or str(error))
+
+    result = (chart.get('result') or [None])[0]
+    if not result:
+        raise ValueError(f'No chart data returned for {symbol}')
+
+    timestamps = result.get('timestamp') or []
+    quotes = ((result.get('indicators') or {}).get('quote') or [{}])[0]
+    frame = pd.DataFrame(
+        {
+            'Open': quotes.get('open', []),
+            'High': quotes.get('high', []),
+            'Low': quotes.get('low', []),
+            'Close': quotes.get('close', []),
+            'Volume': quotes.get('volume', []),
+        },
+        index=pd.to_datetime(timestamps, unit='s'),
+    )
+    frame = frame.dropna(subset=['Close'])
+    return frame, result.get('meta', {})
+
+
 def convert_prediction_to_inr(result, symbol):
-    """Convert ML prediction results to INR"""
-    if is_inr_stock(symbol):
-        return result
-    rate = USD_TO_INR
-    result['current_price'] = round(result['current_price'] * rate, 2)
-    if 'actual_prices' in result:
-        result['actual_prices'] = [round(p * rate, 2) for p in result['actual_prices']]
-    for model in result.get('models', {}).values():
-        if 'predictions' in model:
-            model['predictions'] = [round(p * rate, 2) for p in model['predictions']]
-        if 'metrics' in model:
-            for k in ['mae', 'rmse']:
-                if k in model['metrics']:
-                    model['metrics'][k] = round(model['metrics'][k] * rate, 2)
-            if 'mse' in model['metrics']:
-                model['metrics']['mse'] = round(model['metrics']['mse'] * rate * rate, 4)
-    for f in result.get('future', []):
-        for k in ['predicted_price', 'upper_bound', 'lower_bound']:
-            if k in f:
-                f[k] = round(f[k] * rate, 2)
+    """Normalize ML prediction results without forcing a currency conversion."""
     return result
 
 
@@ -825,32 +1179,25 @@ def get_stock_data(symbol):
     try:
         period = request.args.get('period', '1mo')
         interval = request.args.get('interval', '1d')
-        
-        ticker = yf.Ticker(symbol.upper())
-        hist = ticker.history(period=period, interval=interval)
+        hist, meta = _fetch_yahoo_chart_history(symbol.upper(), period=period, interval=interval)
         
         if hist.empty:
             return jsonify({'error': f'No data found for {symbol}'}), 404
         
-        info = {}
-        try:
-            raw_info = ticker.info
-            info = {
-                'name': get_stock_name(symbol),
-                'sector': raw_info.get('sector', 'N/A'),
-                'industry': raw_info.get('industry', 'N/A'),
-                'marketCap': raw_info.get('marketCap', 0),
-                'peRatio': raw_info.get('trailingPE', 0),
-                'dividendYield': raw_info.get('dividendYield', 0),
-                'fiftyTwoWeekHigh': raw_info.get('fiftyTwoWeekHigh', 0),
-                'fiftyTwoWeekLow': raw_info.get('fiftyTwoWeekLow', 0),
-                'avgVolume': raw_info.get('averageVolume', 0),
-                'beta': raw_info.get('beta', 0),
-                'eps': raw_info.get('trailingEps', 0),
-                'currency': 'INR',
-            }
-        except Exception:
-            info = {'name': get_stock_name(symbol)}
+        info = {
+            'name': meta.get('longName') or meta.get('shortName') or get_stock_name(symbol),
+            'sector': meta.get('sector', 'N/A'),
+            'industry': meta.get('industry', 'N/A'),
+            'marketCap': meta.get('marketCap', 0) or 0,
+            'peRatio': meta.get('trailingPE', 0) or 0,
+            'dividendYield': meta.get('dividendYield', 0) or 0,
+            'fiftyTwoWeekHigh': meta.get('fiftyTwoWeekHigh', 0) or 0,
+            'fiftyTwoWeekLow': meta.get('fiftyTwoWeekLow', 0) or 0,
+            'avgVolume': meta.get('averageVolume', 0) or meta.get('regularMarketVolume', 0) or 0,
+            'beta': meta.get('beta', 0) or 0,
+            'eps': meta.get('trailingEps', 0) or 0,
+            'currency': meta.get('currency', 'USD'),
+        }
         
         data = {
             'dates': hist.index.strftime('%Y-%m-%d %H:%M').tolist(),
@@ -867,9 +1214,124 @@ def get_stock_data(symbol):
         }
         
         data = convert_stock_data_to_inr(data, symbol)
+        data['is_fallback'] = False
+        _LAST_STOCK_PAYLOAD[symbol.upper()] = data
         return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] Failed to get stock data for {symbol}: {e}")
+        msg = str(e).lower()
+        cached = _LAST_STOCK_PAYLOAD.get(symbol.upper())
+        if cached and not cached.get('is_fallback') and ('too many requests' in msg or 'rate limited' in msg):
+            stale = dict(cached)
+            stale['is_stale'] = True
+            stale['warning'] = 'Serving cached data due to temporary upstream rate limit.'
+            return jsonify(stale)
+
+        base_price = _estimate_base_price(symbol.upper(), default_price=100.0)
+        fallback = _build_stock_fallback(symbol, points=30, base_price=base_price)
+        return jsonify(fallback)
+
+@app.route('/api/live_price/<symbol>')
+def get_live_price(symbol):
+    """Fetch live price for a stock symbol."""
+    try:
+        requested_symbol = symbol.upper()
+
+        # Map short index names to Yahoo symbols expected by yfinance.
+        if symbol.upper() in ['NSEI', 'GSPC', 'DJI', 'IXIC', 'RUT'] and not symbol.startswith('^'):
+            symbol = f'^{symbol}'
+        mapped_symbol = symbol.upper()
+
+        latest_price = None
+        prev_close = None
+
+        # Primary source: intraday candles from Yahoo chart API.
+        try:
+            hist, meta = _fetch_yahoo_chart_history(symbol, period='1d', interval='1m')
+            if hist.empty:
+                hist, meta = _fetch_yahoo_chart_history(symbol, period='5d', interval='1d')
+            if not hist.empty:
+                latest_price = float(hist['Close'].iloc[-1])
+                prev_close = float(hist['Close'].iloc[-2]) if len(hist) > 1 else float(meta.get('chartPreviousClose') or latest_price)
+        except Exception:
+            pass
+
+        if latest_price is None or latest_price == 0:
+            cached = _LAST_LIVE_PAYLOAD.get(mapped_symbol) or _LAST_LIVE_PAYLOAD.get(requested_symbol)
+            if cached:
+                stale = dict(cached)
+                stale['is_stale'] = True
+                stale['warning'] = 'Serving cached live data due to temporary upstream rate limit.'
+                return jsonify(stale)
+
+            # Secondary fallback: use latest known stock close/current value if available.
+            stock_cached = _LAST_STOCK_PAYLOAD.get(mapped_symbol) or _LAST_STOCK_PAYLOAD.get(requested_symbol)
+            if stock_cached:
+                stock_price = stock_cached.get('current_price')
+                if stock_price in (None, 0):
+                    close_series = stock_cached.get('close') if isinstance(stock_cached.get('close'), list) else []
+                    if close_series:
+                        stock_price = close_series[-1]
+                if stock_price not in (None, 0):
+                    stale = {
+                        'price': round(float(stock_price), 2),
+                        'change': round(float(stock_cached.get('change', 0) or 0), 2),
+                        'change_pct': round(float(stock_cached.get('change_pct', 0) or 0), 2),
+                        'timestamp': datetime.utcnow().isoformat() + 'Z',
+                        'is_stale': True,
+                        'warning': 'Using recent cached market data while live feed reconnects.',
+                    }
+                    _LAST_LIVE_PAYLOAD[mapped_symbol] = stale
+                    _LAST_LIVE_PAYLOAD[requested_symbol] = stale
+                    return jsonify(stale)
+
+            fallback_price = to_inr(100.0, symbol)
+            fallback = {
+                'price': fallback_price,
+                'change': 0,
+                'change_pct': 0,
+                'timestamp': datetime.utcnow().isoformat() + 'Z',
+                'is_stale': True,
+                'warning': 'Live market data temporarily limited. Showing fallback quote.',
+            }
+            _LAST_LIVE_PAYLOAD[mapped_symbol] = fallback
+            _LAST_LIVE_PAYLOAD[requested_symbol] = fallback
+            return jsonify(fallback)
+
+        change = latest_price - (prev_close if prev_close is not None else latest_price)
+        base = prev_close if prev_close not in (None, 0) else latest_price
+        change_pct = (change / base) * 100 if base else 0
+
+        payload = {
+            'price': to_inr(latest_price, symbol),
+            'change': to_inr(change, symbol),
+            'change_pct': round(change_pct, 2),
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+        }
+        _LAST_LIVE_PAYLOAD[mapped_symbol] = payload
+        _LAST_LIVE_PAYLOAD[requested_symbol] = payload
+        return jsonify(payload)
+    except Exception as e:
+        print(f"[ERROR] Failed to get live price for {symbol}: {e}")
+        msg = str(e).lower()
+        fallback_key = (symbol or '').upper()
+        cached = _LAST_LIVE_PAYLOAD.get(fallback_key)
+        if cached and ('too many requests' in msg or 'rate limited' in msg):
+            stale = dict(cached)
+            stale['is_stale'] = True
+            stale['warning'] = 'Serving cached live data due to temporary upstream rate limit.'
+            return jsonify(stale)
+
+        fallback = {
+            'price': to_inr(100.0, symbol),
+            'change': 0,
+            'change_pct': 0,
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'is_stale': True,
+            'warning': 'Live market data temporarily limited. Showing fallback quote.',
+        }
+        _LAST_LIVE_PAYLOAD[fallback_key] = fallback
+        return jsonify(fallback)
 
 
 @app.route('/api/technical/<symbol>')
@@ -877,8 +1339,7 @@ def get_technical_indicators(symbol):
     """Calculate technical indicators"""
     try:
         period = request.args.get('period', '6mo')
-        ticker = yf.Ticker(symbol.upper())
-        hist = ticker.history(period=period)
+        hist, _meta = _fetch_yahoo_chart_history(symbol.upper(), period=period, interval='1d')
         
         if hist.empty:
             return jsonify({'error': f'No data found for {symbol}'}), 404
@@ -959,9 +1420,22 @@ def get_technical_indicators(symbol):
         }
         
         result = convert_technical_to_inr(result, symbol)
+        result['is_fallback'] = False
+        _LAST_TECH_PAYLOAD[symbol.upper()] = result
         return jsonify(result)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ERROR] Failed to get technical indicators for {symbol}: {e}")
+        msg = str(e).lower()
+        cached = _LAST_TECH_PAYLOAD.get(symbol.upper())
+        if cached and not cached.get('is_fallback') and ('too many requests' in msg or 'rate limited' in msg):
+            stale = dict(cached)
+            stale['is_stale'] = True
+            stale['warning'] = 'Serving cached indicators due to temporary upstream rate limit.'
+            return jsonify(stale)
+
+        base_price = _estimate_base_price(symbol.upper(), default_price=100.0)
+        fallback = _build_technical_fallback(symbol, points=60, base_price=base_price)
+        return jsonify(fallback)
 
 
 def generate_signals(close, rsi, macd, signal, sma20, sma50, bb_upper, bb_lower, stoch_k):
@@ -1051,14 +1525,39 @@ def generate_signals(close, rsi, macd, signal, sma20, sma50, bb_upper, bb_lower,
 
 @app.route('/api/predict/<symbol>')
 def predict_stock(symbol):
-    """ML-based stock price prediction"""
+    """ML-based stock price prediction with graceful fallback during API limits"""
+    import logging
+    logging.basicConfig(level=logging.DEBUG, filename='prediction_debug.log', filemode='a')
+    logger = logging.getLogger(__name__)
+    
     try:
         days = int(request.args.get('days', 30))
+        logger.info(f"[PREDICT] Starting ML prediction for {symbol} ({days} days)")
         result = ml_engine.predict(symbol.upper(), days)
+        logger.info(f"[PREDICT] ML prediction successful for {symbol}")
         result = convert_prediction_to_inr(result, symbol)
+        result['is_fallback'] = bool(result.get('is_fallback', False))
+        _LAST_PRED_PAYLOAD[symbol.upper()] = result
+        logger.info(f"[PREDICT] Returning actual ML predictions for {symbol}")
         return jsonify(result)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[ERROR] ML prediction failed for {symbol}: {type(e).__name__}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        msg = str(e).lower()
+        cached = _LAST_PRED_PAYLOAD.get(symbol.upper())
+        
+        if cached and not cached.get('is_fallback') and ('too many requests' in msg or 'rate limited' in msg or 'timeout' in msg):
+            logger.warning(f"[PREDICT] Returning cached predictions for {symbol} due to rate limit")
+            stale = dict(cached)
+            stale['is_stale'] = True
+            stale['warning'] = 'ML predictions temporarily limited due to upstream rate-limits. Showing last successful prediction.'
+            return jsonify(stale)
+        
+        logger.warning(f"[PREDICT] Returning fallback predictions for {symbol}")
+        base_price = _estimate_base_price(symbol.upper(), default_price=100.0)
+        fallback = _build_prediction_fallback(symbol.upper(), days=int(request.args.get('days', 30)), base_price=base_price)
+        return jsonify(fallback)
 
 
 @app.route('/api/stock-categories')
@@ -1247,62 +1746,283 @@ def quick_scan():
 def market_overview():
     """Get market overview data for major indices and trending stocks"""
     try:
+        now = time.time()
+        with _MARKET_OVERVIEW_CACHE_LOCK:
+            cached_payload = _MARKET_OVERVIEW_CACHE.get('payload')
+            if cached_payload and now < _MARKET_OVERVIEW_CACHE.get('expires_at', 0):
+                return jsonify(cached_payload)
+
         indices = {
             '^GSPC': 'S&P 500',
             '^DJI': 'Dow Jones',
             '^IXIC': 'NASDAQ',
             '^RUT': 'Russell 2000',
         }
-        
+
         trending = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'JPM']
-        
+
+        symbols = list(dict.fromkeys(list(indices.keys()) + trending))
+        snapshots = {}
+        max_workers = min(8, max(1, len(symbols)))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_fetch_market_snapshot, sym): sym for sym in symbols}
+            for future in as_completed(futures):
+                sym = futures[future]
+                snap = future.result()
+                if snap:
+                    snapshots[sym] = snap
+
         index_data = []
         for sym, name in indices.items():
-            try:
-                t = yf.Ticker(sym)
-                h = t.history(period='5d')
-                if len(h) >= 2:
-                    current = round(h['Close'].iloc[-1], 2)
-                    prev = round(h['Close'].iloc[-2], 2)
-                    change = round(current - prev, 2)
-                    change_pct = round((change / prev) * 100, 2)
-                    index_data.append({
-                        'symbol': sym, 'name': name, 'price': to_inr(current, sym),
-                        'change': to_inr(change, sym), 'change_pct': change_pct
-                    })
-            except Exception:
+            snap = snapshots.get(sym)
+            if not snap:
                 continue
-        
+            index_data.append({
+                'symbol': sym,
+                'name': name,
+                'price': snap['price'],
+                'change': snap['change'],
+                'change_pct': snap['change_pct'],
+            })
+
         stock_data = []
         for sym in trending:
+            snap = snapshots.get(sym)
+            if not snap:
+                continue
+            stock_data.append({
+                'symbol': sym,
+                'name': get_stock_name(sym),
+                'price': snap['price'],
+                'change': snap['change'],
+                'change_pct': snap['change_pct'],
+                'volume': snap['volume'],
+            })
+
+        payload = {'indices': index_data, 'trending': stock_data}
+
+        # Cache short-lived payload so repeated dashboard loads feel instant.
+        if index_data or stock_data:
+            with _MARKET_OVERVIEW_CACHE_LOCK:
+                _MARKET_OVERVIEW_CACHE['payload'] = payload
+                _MARKET_OVERVIEW_CACHE['expires_at'] = time.time() + 45
+            return jsonify(payload)
+
+        with _MARKET_OVERVIEW_CACHE_LOCK:
+            stale_payload = _MARKET_OVERVIEW_CACHE.get('payload')
+        if stale_payload:
+            stale = dict(stale_payload)
+            stale['warning'] = 'Serving cached market overview due to temporary upstream limits.'
+            return jsonify(stale)
+
+        return jsonify(payload)
+    except Exception as e:
+        with _MARKET_OVERVIEW_CACHE_LOCK:
+            stale_payload = _MARKET_OVERVIEW_CACHE.get('payload')
+        if stale_payload:
+            stale = dict(stale_payload)
+            stale['warning'] = 'Serving cached market overview due to temporary upstream limits.'
+            return jsonify(stale)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/sector-heatmap')
+@login_required
+def sector_heatmap():
+    """Get sector-level heatmap data used by heatmap.js."""
+    try:
+        period = request.args.get('period', '1d').strip().lower()
+        period_map = {
+            '1d': '5d',
+            '5d': '1mo',
+            '1w': '1mo',
+            '1mo': '3mo',
+            '3mo': '6mo',
+        }
+        yf_period = period_map.get(period, '1mo')
+
+        heatmap = {}
+        for sector, symbols in STOCK_CATEGORIES.items():
+            stocks = []
+            changes = []
+            for sym in symbols:
+                try:
+                    t = yf.Ticker(sym)
+                    h = t.history(period=yf_period)
+                    if h.empty or len(h) < 2:
+                        continue
+                    close_now = float(h['Close'].iloc[-1])
+                    close_prev = float(h['Close'].iloc[-2])
+                    if close_prev == 0:
+                        continue
+                    change_pct = ((close_now - close_prev) / close_prev) * 100
+                    stocks.append({
+                        'symbol': sym,
+                        'name': get_stock_name(sym),
+                        'price': to_inr(close_now, sym),
+                        'change_pct': round(change_pct, 2),
+                    })
+                    changes.append(change_pct)
+                except Exception:
+                    continue
+
+            if stocks:
+                stocks.sort(key=lambda s: s['change_pct'], reverse=True)
+                heatmap[sector] = {
+                    'avg_change': round(float(np.mean(changes)), 2),
+                    'stocks': stocks,
+                }
+
+        return jsonify(heatmap)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/watchlist')
+@login_required
+def api_watchlist():
+    """Get watchlist + portfolio for current user."""
+    store = _load_watchlists()
+    user_key = _normalize_user_key()
+    bundle = _get_user_watchlist_bundle(store, user_key)
+    return jsonify({'stocks': bundle['stocks'], 'portfolio': bundle['portfolio']})
+
+
+@app.route('/api/watchlist/add', methods=['POST'])
+@login_required
+def api_watchlist_add():
+    """Add symbol to user watchlist."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        symbol = str(payload.get('symbol', '')).strip().upper()
+        if not symbol:
+            return jsonify({'success': False, 'error': 'symbol_required'}), 400
+
+        store = _load_watchlists()
+        user_key = _normalize_user_key()
+        bundle = _get_user_watchlist_bundle(store, user_key)
+        if symbol not in bundle['stocks']:
+            bundle['stocks'].append(symbol)
+            _save_watchlists(store)
+        return jsonify({'success': True, 'stocks': bundle['stocks']})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/watchlist/remove', methods=['POST'])
+@login_required
+def api_watchlist_remove():
+    """Remove symbol from user watchlist."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        symbol = str(payload.get('symbol', '')).strip().upper()
+        store = _load_watchlists()
+        user_key = _normalize_user_key()
+        bundle = _get_user_watchlist_bundle(store, user_key)
+        bundle['stocks'] = [s for s in bundle['stocks'] if s.upper() != symbol]
+        _save_watchlists(store)
+        return jsonify({'success': True, 'stocks': bundle['stocks']})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/watchlist/prices', methods=['POST'])
+@login_required
+def api_watchlist_prices():
+    """Get live quote snapshots for watchlist symbols."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        symbols = payload.get('symbols', []) or []
+        results = {}
+
+        for raw_sym in symbols[:100]:
+            sym = str(raw_sym).strip().upper()
+            if not sym:
+                continue
             try:
                 t = yf.Ticker(sym)
                 h = t.history(period='5d')
-                if len(h) >= 2:
-                    current = round(h['Close'].iloc[-1], 2)
-                    prev = round(h['Close'].iloc[-2], 2)
-                    change = round(current - prev, 2)
-                    change_pct = round((change / prev) * 100, 2)
-                    stock_data.append({
-                        'symbol': sym, 'name': get_stock_name(sym), 'price': to_inr(current, sym),
-                        'change': to_inr(change, sym), 'change_pct': change_pct,
-                        'volume': int(h['Volume'].iloc[-1])
-                    })
+                if h.empty or len(h) < 2:
+                    results[sym] = {'error': 'no_data'}
+                    continue
+                current = float(h['Close'].iloc[-1])
+                prev = float(h['Close'].iloc[-2])
+                change = current - prev
+                change_pct = (change / prev) * 100 if prev else 0
+                high = float(h['High'].iloc[-1])
+                low = float(h['Low'].iloc[-1])
+                volume = int(h['Volume'].iloc[-1]) if h['Volume'].iloc[-1] == h['Volume'].iloc[-1] else 0
+
+                results[sym] = {
+                    'symbol': sym,
+                    'name': get_stock_name(sym),
+                    'price': to_inr(current, sym),
+                    'change': to_inr(change, sym),
+                    'change_pct': round(change_pct, 2),
+                    'high': to_inr(high, sym),
+                    'low': to_inr(low, sym),
+                    'volume': volume,
+                }
             except Exception:
-                continue
-        
-        return jsonify({'indices': index_data, 'trending': stock_data})
+                results[sym] = {'error': 'quote_failed'}
+
+        return jsonify(results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/portfolio/add', methods=['POST'])
+@login_required
+def api_portfolio_add():
+    """Add position to user's portfolio."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        symbol = str(payload.get('symbol', '')).strip().upper()
+        buy_price = float(payload.get('buy_price', 0))
+        quantity = int(payload.get('quantity', 0))
+        if not symbol or buy_price <= 0 or quantity <= 0:
+            return jsonify({'success': False, 'error': 'invalid_payload'}), 400
+
+        store = _load_watchlists()
+        user_key = _normalize_user_key()
+        bundle = _get_user_watchlist_bundle(store, user_key)
+        bundle['portfolio'].append({
+            'symbol': symbol,
+            'buy_price': buy_price,
+            'quantity': quantity,
+            'date': datetime.utcnow().strftime('%Y-%m-%d'),
+        })
+        if symbol not in bundle['stocks']:
+            bundle['stocks'].append(symbol)
+        _save_watchlists(store)
+        return jsonify({'success': True, 'portfolio': bundle['portfolio'], 'stocks': bundle['stocks']})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/portfolio/remove', methods=['POST'])
+@login_required
+def api_portfolio_remove():
+    """Remove position from user's portfolio by index."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        index = int(payload.get('index', -1))
+        store = _load_watchlists()
+        user_key = _normalize_user_key()
+        bundle = _get_user_watchlist_bundle(store, user_key)
+        if 0 <= index < len(bundle['portfolio']):
+            bundle['portfolio'].pop(index)
+            _save_watchlists(store)
+            return jsonify({'success': True, 'portfolio': bundle['portfolio']})
+        return jsonify({'success': False, 'error': 'invalid_index'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/compare', methods=['POST'])
 @login_required
 def compare_stocks():
-    """Compare multiple stocks — subscribers only"""
-    username = session.get('username', '').lower()
-    if username not in SUBSCRIBED_USERS:
-        return jsonify({'error': 'premium_required'}), 403
+    """Compare multiple stocks for signed-in users."""
     try:
         data = request.get_json()
         symbols = data.get('symbols', ['AAPL', 'MSFT'])
@@ -1310,9 +2030,9 @@ def compare_stocks():
         
         result = {}
         for sym in symbols[:5]:  # Max 5 stocks
+            key = sym.upper()
             try:
-                t = yf.Ticker(sym.upper())
-                h = t.history(period=period)
+                h, _meta = _fetch_yahoo_chart_history(key, period=period, interval='1d')
                 h = h.dropna(subset=['Close'])
                 if not h.empty:
                     # Normalize prices to percentage change from start
@@ -1324,7 +2044,7 @@ def compare_stocks():
                     # Clean NaN from normalized
                     norm_clean = [round(float(v), 2) if v == v else 0.0 for v in normalized.tolist()]
                     
-                    result[sym.upper()] = {
+                    payload = {
                         'dates': h.index.strftime('%Y-%m-%d').tolist(),
                         'close': list_to_inr(h['Close'].tolist(), sym),
                         'normalized': norm_clean,
@@ -1337,8 +2057,22 @@ def compare_stocks():
                         'avg_volume': int(h['Volume'].mean()) if h['Volume'].mean() == h['Volume'].mean() else 0,
                         'volatility': round(h['Close'].pct_change().std() * np.sqrt(252) * 100, 2) if h['Close'].pct_change().std() == h['Close'].pct_change().std() else 0.0,
                     }
+                    result[key] = payload
+                    _LAST_COMPARE_PAYLOAD[key] = payload
+                    continue
             except Exception:
-                continue
+                pass
+
+            # Graceful fallback per symbol when live compare fetch fails.
+            cached = _LAST_COMPARE_PAYLOAD.get(key)
+            if cached:
+                stale_cached = dict(cached)
+                stale_cached['is_stale'] = True
+                stale_cached['warning'] = 'Serving cached comparison data due to temporary upstream rate limit.'
+                result[key] = stale_cached
+            else:
+                base_price = _estimate_base_price(key, default_price=100.0)
+                result[key] = _build_compare_fallback(key, period=period, base_price=base_price)
         
         return jsonify(result)
     except Exception as e:

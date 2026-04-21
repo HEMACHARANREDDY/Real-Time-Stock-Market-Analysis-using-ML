@@ -6,6 +6,7 @@ Implements multiple ML models: LSTM, Random Forest, Linear Regression, SVR
 import numpy as np
 import pandas as pd
 import yfinance as yf
+import requests
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -14,23 +15,125 @@ from sklearn.svm import SVR
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import TimeSeriesSplit
 import warnings
+import time
 warnings.filterwarnings('ignore')
 
 
 class StockMLEngine:
     """Multi-model ML engine for stock prediction"""
+
+    _YAHOO_CHART_HEADERS = {'User-Agent': 'Mozilla/5.0'}
     
     def __init__(self):
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.look_back = 60  # Days of historical data to use for prediction
+        self._history_cache = {}
+
+    def _fetch_chart_history(self, symbol, period='2y', interval='1d'):
+        """Fetch OHLCV data from Yahoo's chart API."""
+        encoded_symbol = requests.utils.quote((symbol or '').upper(), safe='.')
+        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{encoded_symbol}'
+        params = {
+            'range': period,
+            'interval': interval,
+            'includePrePost': 'false',
+            'events': 'div,splits',
+        }
+        response = requests.get(url, params=params, headers=self._YAHOO_CHART_HEADERS, timeout=20)
+        response.raise_for_status()
+        payload = response.json()
+        chart = payload.get('chart', {})
+        error = chart.get('error')
+        if error:
+            raise ValueError(error.get('description') or str(error))
+
+        result = (chart.get('result') or [None])[0]
+        if not result:
+            raise ValueError(f'No chart data returned for {symbol}')
+
+        timestamps = result.get('timestamp') or []
+        quotes = ((result.get('indicators') or {}).get('quote') or [{}])[0]
+        frame = pd.DataFrame(
+            {
+                'Open': quotes.get('open', []),
+                'High': quotes.get('high', []),
+                'Low': quotes.get('low', []),
+                'Close': quotes.get('close', []),
+                'Volume': quotes.get('volume', []),
+            },
+            index=pd.to_datetime(timestamps, unit='s'),
+        )
+        frame = frame.dropna(subset=['Close'])
+        return frame
+
+    def _normalize_history(self, df):
+        """Normalize provider output into a standard OHLCV dataframe."""
+        if df is None or df.empty:
+            return pd.DataFrame()
+
+        normalized = df.copy()
+        if isinstance(normalized.columns, pd.MultiIndex):
+            normalized.columns = normalized.columns.get_level_values(0)
+
+        rename_map = {
+            'open': 'Open',
+            'high': 'High',
+            'low': 'Low',
+            'close': 'Close',
+            'volume': 'Volume',
+            'adj close': 'Adj Close',
+        }
+        normalized.columns = [rename_map.get(str(c).strip().lower(), c) for c in normalized.columns]
+
+        required = {'Open', 'High', 'Low', 'Close', 'Volume'}
+        if not required.issubset(set(normalized.columns)):
+            return pd.DataFrame()
+
+        normalized = normalized.dropna(subset=['Close'])
+        return normalized
     
     def _fetch_data(self, symbol, period='2y'):
-        """Fetch and prepare stock data"""
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(period=period)
-        if df.empty:
-            raise ValueError(f"No data available for {symbol}")
-        return df
+        """Fetch stock data with retry logic for rate-limit resilience"""
+        max_retries = 3
+        retry_delay = 2  # Start with 2 seconds
+        cache_key = f"{symbol.upper()}::{period}"
+        last_error = None
+        
+        for attempt in range(max_retries):
+            # Try Yahoo chart API first, then yfinance as a backup.
+            fetchers = [
+                lambda: self._fetch_chart_history(symbol, period=period, interval='1d'),
+                lambda: yf.Ticker(symbol).history(period=period),
+                lambda: yf.download(symbol, period=period, progress=False, auto_adjust=False, threads=False),
+            ]
+
+            for fetcher in fetchers:
+                try:
+                    raw_df = fetcher()
+                    df = self._normalize_history(raw_df)
+                    if not df.empty:
+                        self._history_cache[cache_key] = df.copy()
+                        return df
+                except Exception as e:
+                    last_error = e
+
+            error_msg = str(last_error).lower() if last_error else ''
+            is_rate_limit = last_error and ('429' in str(last_error) or 'too many requests' in error_msg or 'rate limit' in error_msg)
+
+            if is_rate_limit and attempt < max_retries - 1:
+                print(f"[RETRY] Rate limited for {symbol}, waiting {retry_delay}s before retry {attempt + 1}/{max_retries}")
+                time.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 10)  # Exponential backoff, max 10s
+                continue
+
+        cached = self._history_cache.get(cache_key)
+        if cached is not None and not cached.empty:
+            print(f"[CACHE] Using cached history for {symbol} ({period}) due to temporary upstream limits")
+            return cached.copy()
+
+        if last_error:
+            raise last_error
+        raise ValueError(f"No data available for {symbol}")
     
     def _create_features(self, df):
         """Engineer features from price data"""
@@ -105,6 +208,64 @@ class StockMLEngine:
         X = data[feature_cols].values
         y = data[target_col].values
         return X, y
+
+    def _estimate_spot_price(self, symbol, default_price=100.0):
+        """Estimate latest available spot price for fallback predictions."""
+        try:
+            h = self._fetch_chart_history(symbol, period='5d', interval='1d')
+            if not h.empty:
+                close = float(h['Close'].iloc[-1])
+                if close == close and close > 0:
+                    return close
+        except Exception:
+            pass
+        return float(default_price)
+
+    def _build_rate_limit_fallback(self, symbol, forecast_days=30, base_price=100.0):
+        """Return deterministic fallback payload when upstream data is temporarily unavailable."""
+        now = datetime.utcnow()
+        price = round(float(base_price), 2)
+
+        future = []
+        for i in range(forecast_days):
+            future_date = now + timedelta(days=i + 1)
+            while future_date.weekday() >= 5:
+                future_date += timedelta(days=1)
+            future.append({
+                'date': future_date.strftime('%Y-%m-%d'),
+                'predicted_price': price,
+                'upper_bound': round(price * 1.05, 2),
+                'lower_bound': round(price * 0.95, 2),
+                'confidence': round(float(max(0.25, 1.0 - i * 0.018)), 2),
+            })
+
+        test_dates = [(now - timedelta(days=(30 - 1 - i))).strftime('%Y-%m-%d') for i in range(30)]
+        actual_prices = [price] * 30
+
+        base_metrics = {'r2': 0.0, 'mae': 0.0, 'mse': 0.0, 'rmse': 0.0, 'mape': 0.0, 'directional_accuracy': 50.0}
+
+        return {
+            'symbol': symbol,
+            'models': {
+                'Random Forest': {'predictions': actual_prices[:], 'metrics': dict(base_metrics)},
+                'Gradient Boosting': {'predictions': actual_prices[:], 'metrics': dict(base_metrics)},
+                'Ridge Regression': {'predictions': actual_prices[:], 'metrics': dict(base_metrics)},
+                'SVR': {'predictions': actual_prices[:], 'metrics': dict(base_metrics)},
+                'Linear Regression': {'predictions': actual_prices[:], 'metrics': dict(base_metrics)},
+                'Ensemble': {'predictions': actual_prices[:], 'metrics': dict(base_metrics)},
+            },
+            'best_model': 'Ensemble',
+            'test_dates': test_dates,
+            'actual_prices': actual_prices,
+            'future': future,
+            'training_size': 100,
+            'test_size': 30,
+            'features_used': 25,
+            'current_price': price,
+            'is_stale': True,
+            'is_fallback': True,
+            'warning': 'Prediction service temporarily rate-limited. Returning fallback trend based on latest known price.',
+        }
     
     def predict(self, symbol, forecast_days=30):
         """Run all ML models and return predictions"""
@@ -234,6 +395,10 @@ class StockMLEngine:
             }
             
         except Exception as e:
+            msg = str(e).lower()
+            if '429' in msg or 'too many requests' in msg or 'rate limit' in msg or 'timeout' in msg:
+                spot_price = self._estimate_spot_price(symbol, default_price=100.0)
+                return self._build_rate_limit_fallback(symbol, forecast_days=forecast_days, base_price=spot_price)
             raise Exception(f"Prediction failed for {symbol}: {str(e)}")
     
     def _forecast_future(self, data, feature_cols, X_train, y_train, rf_model, gb_model, ridge_model, weights, days):

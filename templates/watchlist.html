@@ -8,252 +8,157 @@
     <meta name="description" content="Track your favourite stocks and manage your virtual portfolio with real-time prices and P&L tracking.">
     <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/header.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <!-- Sidebar Navigation -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="/dashboard" style="text-decoration:none;">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>
-                </div>
-                <div class="logo-text">
-                    <h1>S Pulse</h1>
-                    <span class="logo-badge">AI</span>
-                </div>
-            </div>
-            </a>
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
+    {% include 'shared/header.html' %}
 
-        <div class="sidebar-search">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
-                <kbd>Enter</kbd>
-            </div>
-        </div>
-
-        <ul class="nav-menu">
-            <li class="nav-item">
-                <a href="/dashboard" class="nav-link">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/analysis" class="nav-link">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Technical Analysis</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/predictions" class="nav-link">
-                    <i class="fas fa-brain"></i>
-                    <span>ML Predictions</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/market-predictions" class="nav-link">
-                    <i class="fas fa-globe"></i>
-                    <span>Market Predictions</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/compare" class="nav-link">
-                    <i class="fas fa-balance-scale"></i>
-                    <span>Compare Stocks</span>
-                </a>
-            </li>
-            <li class="nav-item active">
-                <a href="/watchlist" class="nav-link">
-                    <i class="fas fa-star"></i>
-                    <span>Watchlist</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/heatmap" class="nav-link">
-                    <i class="fas fa-fire"></i>
-                    <span>Sector Heatmap</span>
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar" id="userAvatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
-                <div class="user-details">
-                    <div class="user-name" id="sidebarUsername">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
-                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
-                </div>
-            </div>
-            <div class="market-status" id="marketStatus">
-                <div class="status-dot"></div>
-                <span>Market Data Live</span>
-            </div>
-            <a href="/logout" class="btn-logout">
-                <i class="fas fa-right-from-bracket"></i> Sign Out
-            </a>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Top Bar -->
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
-                    <i class="fas fa-bars"></i>
-                </button>
+    <div class="main-content-wrapper">
+        <div class="main-content">
+            <div class="page-header">
                 <div>
                     <h2 class="page-title">Watchlist & Portfolio</h2>
                     <span class="page-subtitle" id="currentDate"></span>
                 </div>
-            </div>
-            <div class="topbar-right">
-                {% if not is_subscribed %}
-                <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Go Pro
-                </a>
-                {% endif %}
-                <div class="topbar-actions">
+                <div class="page-actions">
                     <button class="btn-icon" id="refreshBtn" title="Refresh Prices">
                         <i class="fas fa-sync-alt"></i>
                     </button>
-                    <button class="btn-icon" id="themeToggle" title="Toggle Theme">
-                        <i class="fas fa-moon"></i>
-                    </button>
                 </div>
             </div>
-        </header>
 
-        <!-- Portfolio Summary Cards -->
-        <div class="quick-stats" id="portfolioStats">
-            <div class="stat-card glass-card">
-                <div class="stat-icon blue"><i class="fas fa-star"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Watchlist</span>
-                    <span class="stat-value" id="statWatchCount">0</span>
+            <div class="page-hero-strip trading">
+                <div class="page-hero-content">
+                    <div class="page-hero-title">Portfolio Pulse</div>
+                    <div class="page-hero-subtitle">Monitor your watchlist, portfolio allocation, and P&L with cleaner alignment and stronger emphasis.</div>
                 </div>
             </div>
-            <div class="stat-card glass-card">
-                <div class="stat-icon purple"><i class="fas fa-wallet"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Invested</span>
-                    <span class="stat-value" id="statInvested">₹0</span>
-                </div>
-            </div>
-            <div class="stat-card glass-card">
-                <div class="stat-icon" id="statPLIcon"><i class="fas fa-chart-line"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Current Value</span>
-                    <span class="stat-value" id="statCurrentVal">₹0</span>
-                </div>
-            </div>
-            <div class="stat-card glass-card">
-                <div class="stat-icon" id="statProfitIcon"><i class="fas fa-coins"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Total P&L</span>
-                    <span class="stat-value" id="statPL">₹0</span>
-                </div>
-            </div>
-        </div>
 
-        <!-- Watchlist Section -->
-        <div class="content-grid" style="grid-template-columns:1fr;">
-            <div class="glass-card" style="padding:1.5rem;">
-                <div class="card-header" style="margin-bottom:1rem;">
-                    <h3><i class="fas fa-star" style="color:#f59e0b;"></i> My Watchlist</h3>
-                    <div style="display:flex;gap:0.5rem;align-items:center;">
-                        <input type="text" id="addWatchSymbol" class="form-input" placeholder="Enter symbol (e.g., AAPL)" style="min-width:200px;padding:0.5rem 0.75rem;" autocomplete="off">
-                        <button class="btn-primary" id="btnAddWatch" style="white-space:nowrap;">
-                            <i class="fas fa-plus"></i> Add
+            <!-- Portfolio Summary Cards -->
+            <div class="quick-stats" id="portfolioStats">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon blue"><i class="fas fa-star"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Watchlist</span>
+                        <span class="stat-value" id="statWatchCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon purple"><i class="fas fa-wallet"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Invested</span>
+                        <span class="stat-value" id="statInvested">₹0</span>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" id="statPLIcon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Current Value</span>
+                        <span class="stat-value" id="statCurrentVal">₹0</span>
+                    </div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-icon" id="statProfitIcon"><i class="fas fa-coins"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total P&L</span>
+                        <span class="stat-value" id="statPL">₹0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Watchlist Section -->
+            <div class="content-grid" style="grid-template-columns:1fr;">
+                <div class="glass-card" style="padding:1.5rem;">
+                    <div class="card-header" style="margin-bottom:1rem;">
+                        <h3><i class="fas fa-star" style="color:#f59e0b;"></i> My Watchlist</h3>
+                        <div style="display:flex;gap:0.5rem;align-items:center;">
+                            <input type="text" id="addWatchSymbol" class="form-input" placeholder="Enter symbol (e.g., AAPL)" style="min-width:200px;padding:0.5rem 0.75rem;" autocomplete="off">
+                            <button class="btn-primary" id="btnAddWatch" style="white-space:nowrap;">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="watchlistTable">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-row"></div>
+                            <div class="skeleton-row"></div>
+                            <div class="skeleton-row"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Section -->
+            <div class="content-grid" style="grid-template-columns:1fr;margin-top:1.5rem;">
+                <div class="glass-card" style="padding:1.5rem;">
+                    <div class="card-header" style="margin-bottom:1rem;">
+                        <h3><i class="fas fa-briefcase" style="color:#8b5cf6;"></i> My Portfolio</h3>
+                        <button class="btn-primary" id="btnAddPosition" style="white-space:nowrap;">
+                            <i class="fas fa-plus"></i> Add Position
                         </button>
                     </div>
-                </div>
 
-                <div id="watchlistTable">
-                    <div class="loading-skeleton">
-                        <div class="skeleton-row"></div>
-                        <div class="skeleton-row"></div>
-                        <div class="skeleton-row"></div>
+                    <!-- Add Position Form (hidden by default) -->
+                    <div id="addPositionForm" style="display:none;margin-bottom:1.25rem;padding:1rem;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border-color);">
+                        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;">
+                            <div>
+                                <label style="font-size:0.78rem;color:var(--text-secondary);display:block;margin-bottom:0.25rem;">Symbol</label>
+                                <input type="text" id="posSymbol" class="form-input" placeholder="AAPL" style="width:120px;padding:0.5rem 0.75rem;" autocomplete="off">
+                            </div>
+                            <div>
+                                <label style="font-size:0.78rem;color:var(--text-secondary);display:block;margin-bottom:0.25rem;">Buy Price (₹)</label>
+                                <input type="number" id="posBuyPrice" class="form-input" placeholder="15000" step="0.01" min="0" style="width:130px;padding:0.5rem 0.75rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.78rem;color:var(--text-secondary);display:block;margin-bottom:0.25rem;">Quantity</label>
+                                <input type="number" id="posQuantity" class="form-input" placeholder="10" min="1" style="width:100px;padding:0.5rem 0.75rem;">
+                            </div>
+                            <button class="btn-primary" id="btnSavePosition">
+                                <i class="fas fa-check"></i> Save
+                            </button>
+                            <button class="btn-outline" id="btnCancelPosition" style="border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);padding:0.5rem 1rem;border-radius:8px;cursor:pointer;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="portfolioTable">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-row"></div>
+                            <div class="skeleton-row"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Allocation Chart -->
+            <div class="content-grid" style="grid-template-columns:1fr 1fr;margin-top:1.5rem;">
+                <div class="glass-card" style="padding:1.5rem;">
+                    <div class="card-header"><h3><i class="fas fa-chart-pie" style="color:#06b6d4;"></i> Portfolio Allocation</h3></div>
+                    <div class="chart-container" style="max-height:320px;">
+                        <canvas id="allocationChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-card" style="padding:1.5rem;">
+                    <div class="card-header"><h3><i class="fas fa-chart-bar" style="color:#10b981;"></i> P&L by Stock</h3></div>
+                    <div class="chart-container" style="max-height:320px;">
+                        <canvas id="plChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Portfolio Section -->
-        <div class="content-grid" style="grid-template-columns:1fr;margin-top:1.5rem;">
-            <div class="glass-card" style="padding:1.5rem;">
-                <div class="card-header" style="margin-bottom:1rem;">
-                    <h3><i class="fas fa-briefcase" style="color:#8b5cf6;"></i> My Portfolio</h3>
-                    <button class="btn-primary" id="btnAddPosition" style="white-space:nowrap;">
-                        <i class="fas fa-plus"></i> Add Position
-                    </button>
-                </div>
-
-                <!-- Add Position Form (hidden by default) -->
-                <div id="addPositionForm" style="display:none;margin-bottom:1.25rem;padding:1rem;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border-color);">
-                    <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;">
-                        <div>
-                            <label style="font-size:0.78rem;color:var(--text-secondary);display:block;margin-bottom:0.25rem;">Symbol</label>
-                            <input type="text" id="posSymbol" class="form-input" placeholder="AAPL" style="width:120px;padding:0.5rem 0.75rem;" autocomplete="off">
-                        </div>
-                        <div>
-                            <label style="font-size:0.78rem;color:var(--text-secondary);display:block;margin-bottom:0.25rem;">Buy Price (₹)</label>
-                            <input type="number" id="posBuyPrice" class="form-input" placeholder="15000" step="0.01" min="0" style="width:130px;padding:0.5rem 0.75rem;">
-                        </div>
-                        <div>
-                            <label style="font-size:0.78rem;color:var(--text-secondary);display:block;margin-bottom:0.25rem;">Quantity</label>
-                            <input type="number" id="posQuantity" class="form-input" placeholder="10" min="1" style="width:100px;padding:0.5rem 0.75rem;">
-                        </div>
-                        <button class="btn-primary" id="btnSavePosition">
-                            <i class="fas fa-check"></i> Save
-                        </button>
-                        <button class="btn-outline" id="btnCancelPosition" style="border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);padding:0.5rem 1rem;border-radius:8px;cursor:pointer;">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-
-                <div id="portfolioTable">
-                    <div class="loading-skeleton">
-                        <div class="skeleton-row"></div>
-                        <div class="skeleton-row"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Portfolio Allocation Chart -->
-        <div class="content-grid" style="grid-template-columns:1fr 1fr;margin-top:1.5rem;">
-            <div class="glass-card" style="padding:1.5rem;">
-                <div class="card-header"><h3><i class="fas fa-chart-pie" style="color:#06b6d4;"></i> Portfolio Allocation</h3></div>
-                <div class="chart-container" style="max-height:320px;">
-                    <canvas id="allocationChart"></canvas>
-                </div>
-            </div>
-            <div class="glass-card" style="padding:1.5rem;">
-                <div class="card-header"><h3><i class="fas fa-chart-bar" style="color:#10b981;"></i> P&L by Stock</h3></div>
-                <div class="chart-container" style="max-height:320px;">
-                    <canvas id="plChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-    </main>
+    </div>
 
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/header.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version }}"></script>
     <script src="/static/js/watchlist.js"></script>
 </body>
 </html>

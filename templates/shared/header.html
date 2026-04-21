@@ -1,0 +1,81 @@
+<!-- templates/shared/header.html -->
+<header class="main-header">
+    <div class="logo">
+        <a href="{{ '/dashboard' if logged_in else '/' }}" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+            <div class="logo-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none">
+                    <path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"></path>
+                    <polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"></polyline>
+                </svg>
+            </div>
+            <div class="logo-text">
+                <h1>S Pulse</h1>
+                <span class="logo-badge">AI</span>
+            </div>
+        </a>
+    </div>
+
+    {% if logged_in %}
+    <nav class="main-nav">
+        <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' else '' }}">Dashboard</a>
+        <a href="/analysis" class="{{ 'active' if request.path == '/analysis' else '' }}">Analysis</a>
+        <a href="/predictions" class="{{ 'active' if request.path == '/predictions' else '' }}">Predictions</a>
+        <a href="/compare" class="{{ 'active' if request.path == '/compare' else '' }}">Compare</a>
+        <a href="/watchlist" class="{{ 'active' if request.path == '/watchlist' else '' }}">Watchlist</a>
+        <a href="/heatmap" class="{{ 'active' if request.path == '/heatmap' else '' }}">Heatmap</a>
+    </nav>
+    {% else %}
+    <nav class="main-nav">
+        <a href="/#features">Features</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/#faq">FAQ</a>
+    </nav>
+    {% endif %}
+
+    <div class="header-actions">
+        <div class="market-status" id="marketStatus">
+            <div class="status-dot"></div>
+            <span>Market Data Live</span>
+        </div>
+        
+        {% if logged_in %}
+            <div class="user-menu-container">
+                <button class="user-menu-btn" id="userMenuBtn">
+                    <div class="user-avatar" id="userAvatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-header">
+                        <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="pro-badge">PRO</span>{% endif %}</div>
+                        <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
+                    </div>
+                    <a href="/subscribe" class="dropdown-item"><i class="fas fa-crown"></i> Go Pro</a>
+                    <a href="/settings" class="dropdown-item"><i class="fas fa-cog"></i> Settings</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="/logout" class="dropdown-item logout"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        {% else %}
+            <a href="/login" class="btn-secondary">Sign In</a>
+            <a href="/register" class="btn-primary">Get Started</a>
+        {% endif %}
+    </div>
+</header>
+
+{% if logged_in %}
+<!-- Mobile Nav Panel -->
+<div class="mobile-nav-panel" id="mobileNavPanel">
+    <nav>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/analysis">Analysis</a>
+        <a href="/predictions">Predictions</a>
+        <a href="/compare">Compare</a>
+        <a href="/watchlist">Watchlist</a>
+        <a href="/heatmap">Heatmap</a>
+    </nav>
+</div>
+<div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+{% endif %}

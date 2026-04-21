@@ -176,6 +176,8 @@
             <li class="nav-item"><a href="/predictions" class="nav-link"><i class="fas fa-brain"></i><span>ML Predictions</span></a></li>
             <li class="nav-item"><a href="/market-predictions" class="nav-link"><i class="fas fa-globe"></i><span>Market Predictions</span></a></li>
             <li class="nav-item"><a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i><span>Compare Stocks</span></a></li>
+            <li class="nav-item"><a href="/watchlist" class="nav-link"><i class="fas fa-star"></i><span>Watchlist</span></a></li>
+            <li class="nav-item"><a href="/heatmap" class="nav-link"><i class="fas fa-fire"></i><span>Sector Heatmap</span></a></li>
         </ul>
         <div class="sidebar-footer">
             <div class="user-info">
@@ -331,6 +333,6 @@
     </main>
 
     <div class="toast-container" id="toastContainer"></div>
-    <script src="/static/js/app.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version }}"></script>
 </body>
 </html>

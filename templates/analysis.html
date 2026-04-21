@@ -25,76 +25,34 @@
     <meta name="twitter:image" content="https://real-time-stock-market-analysis-using-ml.onrender.com/static/og-image.png">
     <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/header.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 </head>
 <body>
-    <!-- Sidebar Navigation -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="/dashboard" style="text-decoration:none;">
-            <div class="logo">
-                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg></div>
-                <div class="logo-text"><h1>S Pulse</h1><span class="logo-badge">AI</span></div>
-            </div>
-            </a>
-            <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-        </div>
-        <div class="sidebar-search">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
-                <kbd>Enter</kbd>
-            </div>
-        </div>
-        <ul class="nav-menu">
-            <li class="nav-item"><a href="/dashboard" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a></li>
-            <li class="nav-item active"><a href="/analysis" class="nav-link"><i class="fas fa-chart-bar"></i><span>Technical Analysis</span></a></li>
-            <li class="nav-item"><a href="/predictions" class="nav-link"><i class="fas fa-brain"></i><span>ML Predictions</span></a></li>
-            <li class="nav-item"><a href="/market-predictions" class="nav-link"><i class="fas fa-globe"></i><span>Market Predictions</span></a></li>
-            <li class="nav-item"><a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i><span>Compare Stocks</span></a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
-                <div class="user-details">
-                    <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
-                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
-                </div>
-            </div>
-            <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
-            <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
-        </div>
-    </nav>
-
+    {% include 'shared/header.html' %}
+    <div class="main-content-wrapper">
     <!-- Main Content -->
     <main class="main-content">
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
-                <div>
-                    <h2 class="page-title">Technical Analysis</h2>
-                    <span class="page-subtitle" id="currentDate"></span>
-                </div>
+        <div class="page-header">
+            <div>
+                <h2 class="page-title">Technical Analysis</h2>
+                <span class="page-subtitle" id="currentDate"></span>
             </div>
-            <div class="topbar-right">
-                {% if not is_subscribed %}
-                <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Go Pro
-                </a>
-                {% endif %}
-                <div class="topbar-actions">
-                    <button class="btn-icon" id="refreshBtn" title="Refresh"><i class="fas fa-sync-alt"></i></button>
-                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
-                </div>
+        </div>
+
+        <div class="page-hero-strip research">
+            <div class="page-hero-content">
+                <div class="page-hero-title">Indicator-Driven Insights</div>
+                <div class="page-hero-subtitle">Read RSI, MACD, Bollinger Bands, and trend signals with stronger visual clarity and aligned layout blocks.</div>
             </div>
-        </header>
+        </div>
 
         <!-- Stock Selector -->
         <div class="analysis-header">
-            <div class="glass-card" style="padding: 1.5rem;">
+            <div class="glass-card analysis-search-card" style="padding: 1.5rem;">
                 <div class="analysis-controls">
                     <div class="control-group">
                         <label>Stock Symbol</label>
@@ -292,9 +250,11 @@
             <div class="glass-card" id="analysisTextReport"></div>
         </div>
     </main>
+    </div>
 
     <div class="toast-container" id="toastContainer"></div>
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/header.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version }}"></script>
     <script src="/static/js/analysis.js"></script>
 </body>
 </html>

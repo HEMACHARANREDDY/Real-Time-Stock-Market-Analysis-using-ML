@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="uDZoJ0_e90Ye5iG-MVQXdlioq50Ebm9PrpO-YWN8Cn8" />
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>Go Pro - S Pulse</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -566,274 +568,231 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar (standard) -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="/dashboard" style="text-decoration:none;">
-            <div class="logo">
-                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg></div>
-                <div class="logo-text"><h1>S Pulse</h1><span class="logo-badge">AI</span></div>
-            </div>
-            </a>
-            <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-        </div>
-        <div class="sidebar-search">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
-                <kbd>Enter</kbd>
-            </div>
-        </div>
-        <ul class="nav-menu">
-            <li class="nav-item"><a href="/dashboard" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="/analysis" class="nav-link"><i class="fas fa-chart-bar"></i><span>Technical Analysis</span></a></li>
-            <li class="nav-item"><a href="/predictions" class="nav-link"><i class="fas fa-brain"></i><span>ML Predictions</span></a></li>
-            <li class="nav-item"><a href="/market-predictions" class="nav-link"><i class="fas fa-globe"></i><span>Market Predictions</span></a></li>
-            <li class="nav-item"><a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i><span>Compare Stocks</span></a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
-                <div class="user-details">
-                    <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
-                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
-                </div>
-            </div>
-            <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
-            <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
-        </div>
-    </nav>
-
-    <main class="main-content">
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+    {% include 'shared/header.html' %}
+    <div class="main-content-wrapper">
+        <div class="main-content">
+            <div class="page-header">
                 <div>
                     <h2 class="page-title">Go Pro</h2>
                     <span class="page-subtitle">Unlock Premium Features &amp; Text Reports</span>
                 </div>
             </div>
-            <div class="topbar-right">
-                <div class="topbar-actions">
-                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
-                </div>
-            </div>
-        </header>
 
-        <div class="subscribe-page">
+            <div class="subscribe-page">
 
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <ul class="flash-list">
-                {% for category, message in messages %}
-                <li class="flash-msg {{ category }}"><i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i> {{ message }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {% endwith %}
-
-            {% if already_subscribed %}
-            <!-- ── PREMIUM MEMBER DASHBOARD ── -->
-            <div class="premium-hero">
-                <div class="premium-badge-large"><i class="fas fa-crown"></i> Premium Member</div>
-                <h2>You're All Unlocked! 🎉</h2>
-                <p>Thank you for subscribing. All premium features are active on your account <strong>{{ current_user|capitalize }}</strong>.</p>
-            </div>
-
-            <!-- Member Info -->
-            <div class="premium-member-info">
-                <div class="pmi-avatar">{{ current_user[0]|upper }}</div>
-                <div>
-                    <div class="pmi-name">{{ current_user|capitalize }}</div>
-                    <div class="pmi-status"><i class="fas fa-circle-check"></i> Active Premium Subscription</div>
-                </div>
-                <span class="pmi-badge">PRO</span>
-            </div>
-
-            <!-- Premium Features Grid -->
-            <div class="features-card">
-                <h3>Your Premium Features</h3>
-                <div class="premium-grid">
-                    <div class="premium-feat-card">
-                        <div class="premium-feat-icon"><i class="fas fa-balance-scale"></i></div>
-                        <div>
-                            <div class="premium-feat-title">Stock Comparison</div>
-                            <div class="premium-feat-desc">Compare up to 10 stocks side-by-side with charts, metrics &amp; rankings</div>
-                        </div>
-                    </div>
-                    <div class="premium-feat-card">
-                        <div class="premium-feat-icon"><i class="fas fa-file-arrow-down"></i></div>
-                        <div>
-                            <div class="premium-feat-title">Download Text Report</div>
-                            <div class="premium-feat-desc">Export full comparison &amp; analysis reports as printable text</div>
-                        </div>
-                    </div>
-                    <div class="premium-feat-card">
-                        <div class="premium-feat-icon"><i class="fas fa-brain"></i></div>
-                        <div>
-                            <div class="premium-feat-title">Advanced ML Predictions</div>
-                            <div class="premium-feat-desc">Detailed AI forecasts with confidence scores &amp; model insights</div>
-                        </div>
-                    </div>
-                    <div class="premium-feat-card">
-                        <div class="premium-feat-icon"><i class="fas fa-chart-bar"></i></div>
-                        <div>
-                            <div class="premium-feat-title">Technical Analysis Report</div>
-                            <div class="premium-feat-desc">Full text-based technical summary — RSI, MACD, Bollinger &amp; more</div>
-                        </div>
-                    </div>
-                    <div class="premium-feat-card">
-                        <div class="premium-feat-icon"><i class="fas fa-globe"></i></div>
-                        <div>
-                            <div class="premium-feat-title">Market Predictions Report</div>
-                            <div class="premium-feat-desc">Batch AI predictions for global markets in downloadable format</div>
-                        </div>
-                    </div>
-                    <div class="premium-feat-card">
-                        <div class="premium-feat-icon"><i class="fas fa-infinity"></i></div>
-                        <div>
-                            <div class="premium-feat-title">Lifetime Access</div>
-                            <div class="premium-feat-desc">One-time payment — all future premium features included forever</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Action Buttons -->
-            <div class="premium-actions">
-                <a href="/compare" class="btn-premium-action btn-pa-green">
-                    <i class="fas fa-balance-scale"></i> Go to Compare Stocks
-                </a>
-                <a href="/analysis" class="btn-premium-action btn-pa-blue">
-                    <i class="fas fa-chart-bar"></i> Open Technical Analysis
-                </a>
-                <a href="/predictions" class="btn-premium-action btn-pa-blue">
-                    <i class="fas fa-brain"></i> Run ML Predictions
-                </a>
-                <a href="/dashboard" class="btn-premium-action btn-pa-outline">
-                    <i class="fas fa-th-large"></i> Back to Dashboard
-                </a>
-            </div>
-
-            {% else %}
-            <!-- Plans Header -->
-            <div class="plans-header">
-                <div class="price-crown"><i class="fas fa-crown"></i></div>
-                <h2>S Pulse Premium</h2>
-                <p>Choose a plan and unlock <strong>Text Reports</strong> &amp; all premium features.</p>
-            </div>
-
-            <!-- Plan Selection Cards -->
-            <div class="features-card" style="padding:1.4rem 1.6rem;">
-                <h3>Choose Your Plan</h3>
-                <div class="plan-cards">
-                    {% for plan_key, plan_val in plans.items() %}
-                    <div class="plan-card {% if loop.first %}selected{% endif %}"
-                         id="planCard-{{ plan_key }}"
-                         onclick="selectPlan('{{ plan_key }}', {{ plan_val.price }}, '{{ plan_val.duration }}')">
-                        {% if plan_key == 'yearly' %}
-                        <div class="plan-badge-popular">Best Value</div>
-                        {% endif %}
-                        <div class="plan-check"><i class="fas fa-check"></i></div>
-                        <div class="plan-icon"><i class="fas {{ plan_val.icon }}"></i></div>
-                        <div class="plan-label">{{ plan_val.label }}</div>
-                        <div class="plan-price"><sup>₹</sup>{{ plan_val.price }}</div>
-                        <div class="plan-duration">{{ plan_val.duration }}</div>
-                    </div>
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <ul class="flash-list">
+                    {% for category, message in messages %}
+                    <li class="flash-msg {{ category }}"><i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i> {{ message }}</li>
                     {% endfor %}
-                </div>
-            </div>
-
-            <!-- Features -->
-            <div class="features-card">
-                <h3>What You Get</h3>
-                <ul class="feature-list">
-                    <li><div class="feat-icon"><i class="fas fa-file-lines"></i></div>Full ranked stock comparison text report</li>
-                    <li><div class="feat-icon"><i class="fas fa-chart-bar"></i></div>Visual return bar charts &amp; key metric highlights</li>
-                    <li><div class="feat-icon"><i class="fas fa-print"></i></div>Printable &amp; copy-friendly report format</li>
-                    <li><div class="feat-icon"><i class="fas fa-lock-open"></i></div>Access to all future premium features</li>
-                    <li><div class="feat-icon"><i class="fas fa-infinity"></i></div>Lifetime access — pay once, use forever</li>
                 </ul>
-            </div>
+                {% endif %}
+                {% endwith %}
 
-            {% if pending %}
-            <!-- Already Pending -->
-            <div class="pending-banner">
-                <i class="fas fa-clock"></i>
-                <div>
-                    <strong>Payment Under Review</strong>
-                    Your payment has been submitted and is awaiting admin verification.
-                    Access will be activated within a few hours. Thank you for your patience!
+                {% if already_subscribed %}
+                <!-- ── PREMIUM MEMBER DASHBOARD ── -->
+                <div class="premium-hero">
+                    <div class="premium-badge-large"><i class="fas fa-crown"></i> Premium Member</div>
+                    <h2>You're All Unlocked! 🎉</h2>
+                    <p>Thank you for subscribing. All premium features are active on your account <strong>{{ current_user|capitalize }}</strong>.</p>
                 </div>
-            </div>
 
-            {% else %}
-            <!-- Payment Steps -->
-            <div class="steps-card">
-                <h3>How to Pay</h3>
-                <div class="step-row">
-                    <div class="step-num">1</div>
-                    <div class="step-text">Open any UPI app (GPay, PhonePe, Paytm, etc.) and send <strong>₹<span id="upiAmount">{{ plans.monthly.price }}</span></strong> to the UPI ID below.</div>
-                </div>
-                <div class="upi-box">
-                    <div class="upi-row">
-                        <i class="fas fa-mobile-screen"></i>
-                        <span>UPI ID:</span>
-                        <span class="upi-id" id="upiIdText">spulse@upi</span>
-                        <button class="copy-btn" onclick="copyUPI()"><i class="fas fa-copy"></i> Copy</button>
+                <!-- Member Info -->
+                <div class="premium-member-info">
+                    <div class="pmi-avatar">{{ current_user[0]|upper }}</div>
+                    <div>
+                        <div class="pmi-name">{{ current_user|capitalize }}</div>
+                        <div class="pmi-status"><i class="fas fa-circle-check"></i> Active Premium Subscription</div>
                     </div>
-                    <div class="upi-row">
-                        <i class="fas fa-indian-rupee-sign"></i>
-                        <span>Amount: <strong style="color:#f59e0b;">₹<span id="upiAmountBox">{{ plans.monthly.price }}</span></strong></span>
-                    </div>
-                    <div class="upi-row">
-                        <i class="fas fa-user"></i>
-                        <span>Note (optional): Your username — <strong style="color:#f59e0b;">{{ current_user }}</strong></span>
-                    </div>
+                    <span class="pmi-badge">PRO</span>
                 </div>
-                <div class="step-row">
-                    <div class="step-num">2</div>
-                    <div class="step-text">After payment, <strong>copy the UPI Transaction ID</strong> (12-digit reference number) from your payment app.</div>
-                </div>
-                <div class="step-row">
-                    <div class="step-num">3</div>
-                    <div class="step-text">Enter your Transaction ID below and click <strong>Submit Payment</strong>. Admin will verify and activate your account.</div>
-                </div>
-            </div>
 
-            <!-- Transaction ID Form -->
-            <div class="txn-form-card">
-                <h3>Submit Your Payment</h3>
-                <form method="POST" action="/subscribe">
-                    <input type="hidden" name="plan" id="selectedPlanInput" value="monthly">
-                    <div class="form-field">
-                        <label>UPI Transaction ID</label>
-                        <input type="text" name="txn_id" placeholder="e.g. 412345678901"
-                               pattern="\S{6,}" minlength="6" required
-                               title="Enter the transaction/reference ID from your UPI payment">
+                <!-- Premium Features Grid -->
+                <div class="features-card">
+                    <h3>Your Premium Features</h3>
+                    <div class="premium-grid">
+                        <div class="premium-feat-card">
+                            <div class="premium-feat-icon"><i class="fas fa-balance-scale"></i></div>
+                            <div>
+                                <div class="premium-feat-title">Stock Comparison</div>
+                                <div class="premium-feat-desc">Compare up to 10 stocks side-by-side with charts, metrics &amp; rankings</div>
+                            </div>
+                        </div>
+                        <div class="premium-feat-card">
+                            <div class="premium-feat-icon"><i class="fas fa-file-arrow-down"></i></div>
+                            <div>
+                                <div class="premium-feat-title">Download Text Report</div>
+                                <div class="premium-feat-desc">Export full comparison &amp; analysis reports as printable text</div>
+                            </div>
+                        </div>
+                        <div class="premium-feat-card">
+                            <div class="premium-feat-icon"><i class="fas fa-brain"></i></div>
+                            <div>
+                                <div class="premium-feat-title">Advanced ML Predictions</div>
+                                <div class="premium-feat-desc">Detailed AI forecasts with confidence scores &amp; model insights</div>
+                            </div>
+                        </div>
+                        <div class="premium-feat-card">
+                            <div class="premium-feat-icon"><i class="fas fa-chart-bar"></i></div>
+                            <div>
+                                <div class="premium-feat-title">Technical Analysis Report</div>
+                                <div class="premium-feat-desc">Full text-based technical summary — RSI, MACD, Bollinger &amp; more</div>
+                            </div>
+                        </div>
+                        <div class="premium-feat-card">
+                            <div class="premium-feat-icon"><i class="fas fa-globe"></i></div>
+                            <div>
+                                <div class="premium-feat-title">Market Predictions Report</div>
+                                <div class="premium-feat-desc">Batch AI predictions for global markets in downloadable format</div>
+                            </div>
+                        </div>
+                        <div class="premium-feat-card">
+                            <div class="premium-feat-icon"><i class="fas fa-infinity"></i></div>
+                            <div>
+                                <div class="premium-feat-title">Lifetime Access</div>
+                                <div class="premium-feat-desc">One-time payment — all future premium features included forever</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-field" style="flex-direction:row; align-items:center; gap:.5rem; margin-bottom:1.2rem;">
-                        <input type="checkbox" id="confirmPay" required style="width:auto; accent-color:#f59e0b;">
-                        <label for="confirmPay" style="text-transform:none; letter-spacing:0; font-size:.85rem; cursor:pointer;">
-                            I confirm I have paid <strong>₹<span id="confirmAmount">{{ plans.monthly.price }}</span></strong> to the UPI ID above.
-                        </label>
-                    </div>
-                    <button type="submit" class="btn-pay">
-                        <i class="fas fa-paper-plane"></i> Submit Payment
-                    </button>
-                </form>
-            </div>
-            {% endif %}
+                </div>
 
-            {% endif %}{# end already_subscribed #}
+                <!-- Quick Action Buttons -->
+                <div class="premium-actions">
+                    <a href="/compare" class="btn-premium-action btn-pa-green">
+                        <i class="fas fa-balance-scale"></i> Go to Compare Stocks
+                    </a>
+                    <a href="/analysis" class="btn-premium-action btn-pa-blue">
+                        <i class="fas fa-chart-bar"></i> Open Technical Analysis
+                    </a>
+                    <a href="/predictions" class="btn-premium-action btn-pa-blue">
+                        <i class="fas fa-brain"></i> Run ML Predictions
+                    </a>
+                    <a href="/dashboard" class="btn-premium-action btn-pa-outline">
+                        <i class="fas fa-th-large"></i> Back to Dashboard
+                    </a>
+                </div>
+
+                {% else %}
+                <!-- Plans Header -->
+                <div class="plans-header">
+                    <div class="price-crown"><i class="fas fa-crown"></i></div>
+                    <h2>S Pulse Premium</h2>
+                    <p>Choose a plan and unlock <strong>Text Reports</strong> &amp; all premium features.</p>
+                </div>
+
+                <!-- Plan Selection Cards -->
+                <div class="features-card" style="padding:1.4rem 1.6rem;">
+                    <h3>Choose Your Plan</h3>
+                    <div class="plan-cards">
+                        {% for plan_key, plan_val in plans.items() %}
+                        <div class="plan-card {% if loop.first %}selected{% endif %}"
+                             id="planCard-{{ plan_key }}"
+                             onclick="selectPlan('{{ plan_key }}', {{ plan_val.price }}, '{{ plan_val.duration }}')">
+                            {% if plan_key == 'yearly' %}
+                            <div class="plan-badge-popular">Best Value</div>
+                            {% endif %}
+                            <div class="plan-check"><i class="fas fa-check"></i></div>
+                            <div class="plan-icon"><i class="fas {{ plan_val.icon }}"></i></div>
+                            <div class="plan-label">{{ plan_val.label }}</div>
+                            <div class="plan-price"><sup>₹</sup>{{ plan_val.price }}</div>
+                            <div class="plan-duration">{{ plan_val.duration }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="features-card">
+                    <h3>What You Get</h3>
+                    <ul class="feature-list">
+                        <li><div class="feat-icon"><i class="fas fa-file-lines"></i></div>Full ranked stock comparison text report</li>
+                        <li><div class="feat-icon"><i class="fas fa-chart-bar"></i></div>Visual return bar charts &amp; key metric highlights</li>
+                        <li><div class="feat-icon"><i class="fas fa-print"></i></div>Printable &amp; copy-friendly report format</li>
+                        <li><div class="feat-icon"><i class="fas fa-lock-open"></i></div>Access to all future premium features</li>
+                        <li><div class="feat-icon"><i class="fas fa-infinity"></i></div>Lifetime access — pay once, use forever</li>
+                    </ul>
+                </div>
+
+                {% if pending %}
+                <!-- Already Pending -->
+                <div class="pending-banner">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <strong>Payment Under Review</strong>
+                        Your payment has been submitted and is awaiting admin verification.
+                        Access will be activated within a few hours. Thank you for your patience!
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- Payment Steps -->
+                <div class="steps-card">
+                    <h3>How to Pay</h3>
+                    <div class="step-row">
+                        <div class="step-num">1</div>
+                        <div class="step-text">Open any UPI app (GPay, PhonePe, Paytm, etc.) and send <strong>₹<span id="upiAmount">{{ plans.monthly.price }}</span></strong> to the UPI ID below.</div>
+                    </div>
+                    <div class="upi-box">
+                        <div class="upi-row">
+                            <i class="fas fa-mobile-screen"></i>
+                            <span>UPI ID:</span>
+                            <span class="upi-id" id="upiIdText">spulse@upi</span>
+                            <button class="copy-btn" onclick="copyUPI()"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                        <div class="upi-row">
+                            <i class="fas fa-indian-rupee-sign"></i>
+                            <span>Amount: <strong style="color:#f59e0b;">₹<span id="upiAmountBox">{{ plans.monthly.price }}</span></strong></span>
+                        </div>
+                        <div class="upi-row">
+                            <i class="fas fa-user"></i>
+                            <span>Note (optional): Your username — <strong style="color:#f59e0b;">{{ current_user }}</strong></span>
+                        </div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-num">2</div>
+                        <div class="step-text">After payment, <strong>copy the UPI Transaction ID</strong> (12-digit reference number) from your payment app.</div>
+                    </div>
+                    <div class="step-row">
+                        <div class="step-num">3</div>
+                        <div class="step-text">Enter your Transaction ID below and click <strong>Submit Payment</strong>. Admin will verify and activate your account.</div>
+                    </div>
+                </div>
+
+                <!-- Transaction ID Form -->
+                <div class="txn-form-card">
+                    <h3>Submit Your Payment</h3>
+                    <form method="POST" action="/subscribe">
+                        <input type="hidden" name="plan" id="selectedPlanInput" value="monthly">
+                        <div class="form-field">
+                            <label>UPI Transaction ID</label>
+                            <input type="text" name="txn_id" placeholder="e.g. 412345678901"
+                                   pattern="\S{6,}" minlength="6" required
+                                   title="Enter the transaction/reference ID from your UPI payment">
+                        </div>
+                        <div class="form-field" style="flex-direction:row; align-items:center; gap:.5rem; margin-bottom:1.2rem;">
+                            <input type="checkbox" id="confirmPay" required style="width:auto; accent-color:#f59e0b;">
+                            <label for="confirmPay" style="text-transform:none; letter-spacing:0; font-size:.85rem; cursor:pointer;">
+                                I confirm I have paid <strong>₹<span id="confirmAmount">{{ plans.monthly.price }}</span></strong> to the UPI ID above.
+                            </label>
+                        </div>
+                        <button type="submit" class="btn-pay">
+                            <i class="fas fa-paper-plane"></i> Submit Payment
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                {% endif %}{# end already_subscribed #}
+            </div>
         </div>
-    </main>
+    </div>
 
     <div class="toast-container" id="toastContainer"></div>
-    <script src="/static/js/app.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version }}"></script>
+    <script src="{{ url_for('static', filename='js/header.js') }}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => { initCommon(); });
         function copyUPI() {
             const id = document.getElementById('upiIdText').textContent.trim();
             navigator.clipboard.writeText(id).then(() => {

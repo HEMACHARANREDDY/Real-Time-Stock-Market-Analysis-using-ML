@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <title>Login - S Pulse Stock Market Analytics</title>
     <!-- SEO Meta Tags -->
     <meta name="description" content="Sign in to S Pulse for AI-powered stock predictions, real-time market analytics, and personalized stock alerts.">
@@ -19,24 +19,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}">
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --bg-primary: #0a0e17;
-            --bg-card: #1a1f2e;
-            --bg-input: #1e2433;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
+            --bg-primary: #080c14;
+            --bg-card: #141b2d;
+            --bg-input: #1a2236;
+            --text-primary: #f0f6ff;
+            --text-secondary: #8b9ec7;
+            --text-muted: #546282;
+            --accent-blue: #4f8eff;
+            --accent-purple: #9b6dff;
             --accent-cyan: #06b6d4;
-            --accent-green: #10b981;
-            --accent-red: #ef4444;
-            --border-color: rgba(148, 163, 184, 0.1);
-            --border-highlight: rgba(59, 130, 246, 0.4);
-            --gradient-primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --accent-green: #12e8a0;
+            --accent-red: #ff4d6a;
+            --border-color: rgba(100, 130, 200, 0.12);
+            --border-highlight: rgba(79, 142, 255, 0.4);
+            --gradient-primary: linear-gradient(135deg, #4f8eff, #9b6dff);
             --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.7);
             --font-sans: 'Inter', -apple-system, sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
@@ -47,6 +48,7 @@
             font-family: var(--font-sans);
             background: var(--bg-primary);
             color: var(--text-primary);
+            font-weight: 700;
             overflow: hidden;
         }
 
@@ -94,96 +96,6 @@
         @keyframes tickerScroll {
             0%   { transform: translateX(0); }
             100% { transform: translateX(-50%); }
-        }
-
-        /* ── Top Nav (matches landing page) ── */
-        .top-nav {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 3;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 2rem;
-            background: rgba(10, 14, 23, 0.92);
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            backdrop-filter: blur(12px);
-        }
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            font-size: 1.4rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .nav-logo svg { flex-shrink: 0; }
-        .nav-logo .nav-ai-pill {
-            font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
-            padding: 2px 7px; border-radius: 20px;
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: var(--accent-blue);
-            text-transform: uppercase;
-            -webkit-text-fill-color: var(--accent-blue);
-        }
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .nav-btn {
-            padding: 0.5rem 1.2rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.88rem;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: none;
-        }
-        .nav-btn-outline {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.2);
-            color: var(--text-primary);
-        }
-        .nav-btn-outline:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-        .nav-btn-primary {
-            background: var(--gradient-primary);
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(59,130,246,0.3);
-        }
-        .nav-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* ── Market status pill ── */
-        .market-pill {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 11px; color: var(--text-muted);
-            font-family: var(--font-mono);
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
-            padding: 4px 10px; border-radius: 20px;
-        }
-        .status-dot {
-            width: 7px; height: 7px; border-radius: 50%;
-            background: var(--accent-green);
-            box-shadow: 0 0 7px var(--accent-green);
-            animation: pulse 2s infinite;
-        }
-        .status-dot.closed {
-            background: var(--accent-red);
-            box-shadow: 0 0 7px var(--accent-red);
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.4; }
         }
 
         /* ── Login Container ── */
@@ -468,6 +380,8 @@
 </head>
 <body>
 
+    {% include 'shared/header.html' %}
+
     <!-- Canvas background: animated stock charts -->
     <canvas id="bgCanvas"></canvas>
 
@@ -502,22 +416,6 @@
         <div class="fc-price">₹13,671</div>
         <div class="fc-chg down">▼ -0.44%</div>
     </div>
-
-    <!-- Top Nav (matches landing page style) -->
-    <nav class="top-nav">
-        <a href="/" class="nav-logo">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>
-            S Pulse
-            <span class="nav-ai-pill">AI</span>
-        </a>
-        <div class="nav-right">
-            <div class="market-pill">
-                <div class="status-dot" id="marketDot"></div>
-                <span id="marketLabel">Market Open</span>
-                <span style="opacity:0.45;" id="liveClock"></span>
-            </div>
-        </div>
-    </nav>
 
     <!-- Login card -->
     <div class="login-wrapper">
@@ -622,10 +520,12 @@
         <div class="ticker-track" id="tickerTrack"></div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/header.js') }}"></script>
     <script>
     // ── Live clock ──
     function updateClock() {
         const el = document.getElementById('liveClock');
+        if (!el) return;
         const now = new Date();
         el.textContent = now.toLocaleTimeString('en-US', { hour12: false });
     }
@@ -648,28 +548,36 @@
     // ── Market Status ──
     function updateLoginMarketStatus() {
         const now = new Date();
+
+        // US session: Mon-Fri 09:30-16:00 ET
         const etParts = new Intl.DateTimeFormat('en-US', {
             timeZone: 'America/New_York',
-            weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
+            weekday: 'short',
             hour: 'numeric', minute: 'numeric', hour12: false
         }).formatToParts(now);
         const get = (type) => etParts.find(p => p.type === type)?.value || '';
-        const dayStr  = get('weekday');
-        const hour    = parseInt(get('hour'));
-        const minute  = parseInt(get('minute'));
-        const dateStr = `${get('year')}-${get('month')}-${get('day')}`;
-        const isWeekend = dayStr === 'Sat' || dayStr === 'Sun';
-        const timeMin   = hour * 60 + minute;
-        const inHours   = timeMin >= 9 * 60 + 30 && timeMin < 16 * 60;
-        const holidays  = new Set([
-            '2026-01-01','2026-01-19','2026-02-16','2026-04-03',
-            '2026-05-25','2026-07-03','2026-09-07','2026-11-26',
-            '2026-11-27','2026-12-25',
-            '2025-01-01','2025-01-20','2025-02-17','2025-04-18',
-            '2025-05-26','2025-07-04','2025-09-01','2025-11-27',
-            '2025-11-28','2025-12-25',
-        ]);
-        const isOpen = !isWeekend && !holidays.has(dateStr) && inHours;
+        const usDayStr = get('weekday');
+        const usHour = parseInt(get('hour'));
+        const usMinute = parseInt(get('minute'));
+        const usIsWeekend = usDayStr === 'Sat' || usDayStr === 'Sun';
+        const usMin = usHour * 60 + usMinute;
+        const usOpen = !usIsWeekend && usMin >= 9 * 60 + 30 && usMin < 16 * 60;
+
+        // India session: Mon-Fri 09:15-15:30 IST
+        const istParts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Kolkata',
+            weekday: 'short',
+            hour: 'numeric', minute: 'numeric', hour12: false
+        }).formatToParts(now);
+        const getIst = (type) => istParts.find(p => p.type === type)?.value || '';
+        const istDayStr = getIst('weekday');
+        const istHour = parseInt(getIst('hour'));
+        const istMinute = parseInt(getIst('minute'));
+        const istIsWeekend = istDayStr === 'Sat' || istDayStr === 'Sun';
+        const istMin = istHour * 60 + istMinute;
+        const indiaOpen = !istIsWeekend && istMin >= 9 * 60 + 15 && istMin < 15 * 60 + 30;
+
+        const isOpen = usOpen || indiaOpen;
         const dot   = document.getElementById('marketDot');
         const label = document.getElementById('marketLabel');
         if (dot)   dot.className   = isOpen ? 'status-dot' : 'status-dot closed';

@@ -8,12 +8,78 @@ let lastCompareData = null;   // stored so text view can re-render
 let currentView = 'graph';
 let compareChartType = 'line';
 
+function ensureCompareResultShell() {
+    const root = document.getElementById('compareResults');
+    if (!root) return false;
+
+    const hasCore = document.getElementById('compareSummary')
+        && document.getElementById('compareChart')
+        && document.getElementById('absoluteChart')
+        && document.getElementById('compareBody')
+        && document.getElementById('textReportCard');
+
+    if (hasCore) return true;
+
+    root.innerHTML = `
+        <div id="graphView">
+            <div class="compare-summary" id="compareSummary"></div>
+
+            <div class="glass-card" style="padding:1rem;margin-bottom:1rem;">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;">
+                    <h3 style="margin:0;">Performance Comparison</h3>
+                    <select id="compareChartType" class="form-input" style="min-width:160px;" onchange="switchCompareChartType(this.value)">
+                        <option value="line" selected>Line</option>
+                        <option value="area">Area</option>
+                        <option value="bar">Bar</option>
+                    </select>
+                </div>
+                <div class="chart-container" style="height:360px;"><canvas id="compareChart"></canvas></div>
+            </div>
+
+            <div class="glass-card" style="padding:1rem;margin-bottom:1rem;">
+                <h3 style="margin-top:0;">Absolute Price Comparison</h3>
+                <div class="chart-container" style="height:360px;"><canvas id="absoluteChart"></canvas></div>
+            </div>
+
+            <div class="glass-card" style="padding:1rem;overflow:auto;">
+                <h3 style="margin-top:0;">Comparison Table</h3>
+                <table class="data-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Return</th>
+                            <th>High</th>
+                            <th>Low</th>
+                            <th>Volatility</th>
+                            <th>Avg Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody id="compareBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="textView" style="display:none;">
+            <div class="glass-card" id="textReportCard"></div>
+        </div>
+    `;
+
+    return true;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initCommon();
+    const compareBtn = document.getElementById('compareBtn');
+
+    // On non-premium view, compare controls are not rendered.
+    if (!compareBtn) return;
+
     initTagInput();
     initSuggestions();
 
-    document.getElementById('compareBtn').addEventListener('click', runComparison);
+    compareBtn.addEventListener('click', runComparison);
 
     // Pre-load 2 default stocks so users can click Compare immediately
     ['AAPL', 'MSFT'].forEach(s => addTag(s));
@@ -142,6 +208,24 @@ async function runComparison() {
             body: JSON.stringify({ symbols, period })
         });
 
+        if (res.status === 401) {
+            showToast('Session expired. Redirecting to login...', 'error');
+            setTimeout(() => { window.location.href = '/login'; }, 600);
+            return;
+        }
+
+        if (res.status === 403) {
+            let errPayload = null;
+            try { errPayload = await res.json(); } catch (_) { errPayload = null; }
+            if (errPayload && errPayload.error === 'premium_required') {
+                showToast('Compare feature is premium. Redirecting to Subscribe...', 'info');
+                setTimeout(() => { window.location.href = '/subscribe'; }, 700);
+                return;
+            }
+            showToast('Access denied for compare request.', 'error');
+            return;
+        }
+
         // If not JSON (e.g. session expired → redirect to login page)
         const contentType = res.headers.get('content-type') || '';
         if (!contentType.includes('application/json')) {
@@ -158,6 +242,11 @@ async function runComparison() {
 
         if (Object.keys(data).length === 0) {
             showToast('No data returned — check the stock symbols and try again.', 'error');
+            return;
+        }
+
+        if (!ensureCompareResultShell()) {
+            showToast('Compare layout failed to initialize. Please refresh once.', 'error');
             return;
         }
         
@@ -494,7 +583,8 @@ function renderTextReport(data) {
         </div>
     </div>`;
 
-    document.getElementById('textReportCard').innerHTML = html;
+    const card = document.getElementById('textReportCard');
+    if (card) card.innerHTML = html;
 }
 
 /* ── Download Text Report ──────────────────────────────── */

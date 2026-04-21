@@ -26,6 +26,7 @@
     <!-- Set theme BEFORE css renders to prevent flash -->
     <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/header.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -107,441 +108,249 @@
     </style>
 </head>
 <body>
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="/dashboard" style="text-decoration:none;">
-            <div class="logo">
-                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg></div>
-                <div class="logo-text"><h1>S Pulse</h1><span class="logo-badge">AI</span></div>
-            </div>
-            </a>
-            <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-        </div>
-        <div class="sidebar-search">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
-                <kbd>Enter</kbd>
-            </div>
-        </div>
-        <ul class="nav-menu">
-            <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a></li>
-            <li class="nav-item"><a href="/analysis" class="nav-link"><i class="fas fa-chart-bar"></i><span>Technical Analysis</span></a></li>
-            <li class="nav-item"><a href="/predictions" class="nav-link"><i class="fas fa-brain"></i><span>ML Predictions</span></a></li>
-            <li class="nav-item"><a href="/market-predictions" class="nav-link"><i class="fas fa-globe"></i><span>Market Predictions</span></a></li>
-            <li class="nav-item active"><a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i><span>Compare Stocks</span></a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
-                <div class="user-details">
-                    <div class="user-name">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
-                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
-                </div>
-            </div>
-            <div class="market-status"><div class="status-dot"></div><span>Market Data Live</span></div>
-            <a href="/logout" class="btn-logout"><i class="fas fa-right-from-bracket"></i> Sign Out</a>
-        </div>
-    </nav>
+    {% include 'shared/header.html' %}
 
-    <main class="main-content">
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+    <div class="main-content-wrapper">
+        <div class="main-content">
+            <div class="page-header">
                 <div>
                     <h2 class="page-title">Compare Stocks</h2>
                     <span class="page-subtitle" id="currentDate"></span>
                 </div>
             </div>
-            <div class="topbar-right">
-                {% if not is_subscribed %}
-                <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Go Pro
-                </a>
-                {% endif %}
-                {% if current_user == 'admin' %}
-                <a href="/admin/subscriptions" style="display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .9rem;
-                    background:rgba(148,163,184,.1);border:1px solid rgba(148,163,184,.2);
-                    color:var(--text-secondary,#94a3b8);font-weight:600;font-size:.8rem;
-                    border-radius:8px;text-decoration:none;">
-                    <i class="fas fa-shield-halved"></i> Admin
-                </a>
-                {% endif %}
-                <div class="topbar-actions">
-                    <button class="btn-icon" id="themeToggle" title="Theme"><i class="fas fa-moon"></i></button>
+
+            {% if not is_subscribed %}
+            <!-- ════════════════════════════════════════ -->
+            <!--  PREMIUM GATE  (non-subscribers)        -->
+            <!-- ════════════════════════════════════════ -->
+            <div class="premium-gate-page">
+                <div class="gate-crown-icon"><i class="fas fa-crown"></i></div>
+                <h2>Premium Feature</h2>
+                <p class="gate-sub">
+                    <strong>Compare Stocks</strong> lets you pit up to 5 stocks head-to-head with
+                    performance charts, metrics, text reports and download — all in one place.
+                    Unlock it by subscribing to Pro.
+                </p>
+                <div class="gate-price-badge">Pro<small>lifetime access</small></div>
+                <div class="gate-features-grid">
+                    <div class="gate-feature-item"><i class="fas fa-chart-line"></i> Normalized performance chart</div>
+                    <div class="gate-feature-item"><i class="fas fa-table"></i> Side-by-side metrics table</div>
+                    <div class="gate-feature-item"><i class="fas fa-file-lines"></i> Full text comparison report</div>
+                    <div class="gate-feature-item"><i class="fas fa-file-arrow-down"></i> Download report as .txt</div>
+                    <div class="gate-feature-item"><i class="fas fa-bolt"></i> Up to 5 stocks at once</div>
+                    <div class="gate-feature-item"><i class="fas fa-infinity"></i> All future premium features</div>
+                </div>
+                <div class="gate-actions">
+                    <a href="/subscribe" class="btn-gate-buy">
+                        <i class="fas fa-crown"></i> Go Pro
+                    </a>
                 </div>
             </div>
-        </header>
+            {% else %}
 
-        {% if not is_subscribed %}
-        <!-- ════════════════════════════════════════ -->
-        <!--  PREMIUM GATE  (non-subscribers)        -->
-        <!-- ════════════════════════════════════════ -->
-        <div class="premium-gate-page">
-            <div class="gate-crown-icon"><i class="fas fa-crown"></i></div>
-            <h2>Premium Feature</h2>
-            <p class="gate-sub">
-                <strong>Compare Stocks</strong> lets you pit up to 5 stocks head-to-head with
-                performance charts, metrics, text reports and download — all in one place.
-                Unlock it by subscribing to Pro.
-            </p>
-            <div class="gate-price-badge">Pro<small>lifetime access</small></div>
-            <div class="gate-features-grid">
-                <div class="gate-feature-item"><i class="fas fa-chart-line"></i> Normalized performance chart</div>
-                <div class="gate-feature-item"><i class="fas fa-table"></i> Side-by-side metrics table</div>
-                <div class="gate-feature-item"><i class="fas fa-file-lines"></i> Full text comparison report</div>
-                <div class="gate-feature-item"><i class="fas fa-file-arrow-down"></i> Download report as .txt</div>
-                <div class="gate-feature-item"><i class="fas fa-bolt"></i> Up to 5 stocks at once</div>
-                <div class="gate-feature-item"><i class="fas fa-infinity"></i> All future premium features</div>
+            <!-- Compare Controls -->
+            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <!-- Tag input row -->
+                <div class="compare-input-row">
+                    <div class="control-group" style="flex:1;">
+                        <label>Symbols <span style="opacity:.6;font-weight:400;">(click Quick Add chips below, or type &amp; press Enter)</span></label>
+                        <!-- Selected tag pills shown here -->
+                        <div class="tag-list" id="tagList" style="display:flex;flex-wrap:wrap;gap:.35rem;min-height:28px;margin-bottom:.4rem;"></div>
+                        <div style="font-size:.75rem;margin-bottom:.4rem;" id="tagCounter">No stocks selected — click chips below or type above</div>
+                        <div class="tag-input-wrapper" id="tagInputWrapper">
+                            <input type="text" id="tagTyping" class="tag-typing" placeholder="e.g. AAPL,MSFT,GOOGL — press Enter" autocomplete="off" spellcheck="false" style="width:100%;">
+                        </div>
+                        <!-- hidden, kept in sync for runComparison() -->
+                        <input type="hidden" id="compareSymbols">
+                    </div>
+                    <div class="control-group">
+                        <label>Period</label>
+                        <select id="comparePeriod" class="form-input">
+                            <option value="1mo">1 Month</option>
+                            <option value="3mo">3 Months</option>
+                            <option value="6mo">6 Months</option>
+                            <option value="1y" selected>1 Year</option>
+                            <option value="2y">2 Years</option>
+                            <option value="5y">5 Years</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="compareBtn">
+                        <i class="fas fa-balance-scale"></i> Compare
+                    </button>
+                </div>
+
+                <!-- Suggestions Panel -->
+                <div class="suggestions-panel">
+                    <div class="suggestions-title"><i class="fas fa-lightbulb"></i> Quick Add</div>
+                    <div class="suggestion-groups">
+                        <div class="suggestion-group">
+                            <span class="sg-label">Tech</span>
+                            <button class="sug-chip" data-sym="AAPL" title="Apple Inc.">AAPL</button>
+                            <button class="sug-chip" data-sym="MSFT" title="Microsoft Corporation">MSFT</button>
+                            <button class="sug-chip" data-sym="GOOGL" title="Alphabet Inc. (Google)">GOOGL</button>
+                            <button class="sug-chip" data-sym="AMZN" title="Amazon.com Inc.">AMZN</button>
+                            <button class="sug-chip" data-sym="NVDA" title="NVIDIA Corporation">NVDA</button>
+                            <button class="sug-chip" data-sym="META" title="Meta Platforms Inc. (Facebook)">META</button>
+                            <button class="sug-chip" data-sym="TSLA" title="Tesla Inc.">TSLA</button>
+                            <button class="sug-chip" data-sym="AMD" title="Advanced Micro Devices Inc.">AMD</button>
+                            <button class="sug-chip" data-sym="INTC" title="Intel Corporation">INTC</button>
+                            <button class="sug-chip" data-sym="ORCL" title="Oracle Corporation">ORCL</button>
+                        </div>
+                        <div class="suggestion-group">
+                            <span class="sg-label">Finance</span>
+                            <button class="sug-chip" data-sym="JPM" title="JPMorgan Chase & Co.">JPM</button>
+                            <button class="sug-chip" data-sym="GS" title="Goldman Sachs Group Inc.">GS</button>
+                            <button class="sug-chip" data-sym="BAC" title="Bank of America Corporation">BAC</button>
+                            <button class="sug-chip" data-sym="V" title="Visa Inc.">V</button>
+                            <button class="sug-chip" data-sym="MA" title="Mastercard Incorporated">MA</button>
+                            <button class="sug-chip" data-sym="WFC" title="Wells Fargo & Company">WFC</button>
+                        </div>
+                        <div class="suggestion-group">
+                            <span class="sg-label">Healthcare</span>
+                            <button class="sug-chip" data-sym="JNJ" title="Johnson & Johnson">JNJ</button>
+                            <button class="sug-chip" data-sym="PFE" title="Pfizer Inc.">PFE</button>
+                            <button class="sug-chip" data-sym="UNH" title="UnitedHealth Group Inc.">UNH</button>
+                            <button class="sug-chip" data-sym="ABBV" title="AbbVie Inc.">ABBV</button>
+                            <button class="sug-chip" data-sym="MRK" title="Merck & Co. Inc.">MRK</button>
+                        </div>
+                        <div class="suggestion-group">
+                            <span class="sg-label">Energy</span>
+                            <button class="sug-chip" data-sym="XOM" title="Exxon Mobil Corporation">XOM</button>
+                            <button class="sug-chip" data-sym="CVX" title="Chevron Corporation">CVX</button>
+                            <button class="sug-chip" data-sym="COP" title="ConocoPhillips">COP</button>
+                        </div>
+                        <div class="suggestion-group">
+                            <span class="sg-label">India (NSE)</span>
+                            <button class="sug-chip" data-sym="RELIANCE.NS" title="Reliance Industries Limited">RELIANCE</button>
+                            <button class="sug-chip" data-sym="TCS.NS" title="Tata Consultancy Services">TCS</button>
+                            <button class="sug-chip" data-sym="INFY.NS" title="Infosys Limited">INFY</button>
+                            <button class="sug-chip" data-sym="HDFCBANK.NS" title="HDFC Bank Limited">HDFC Bank</button>
+                            <button class="sug-chip" data-sym="WIPRO.NS" title="Wipro Limited">WIPRO</button>
+                            <button class="sug-chip" data-sym="TATAMOTORS.NS" title="Tata Motors Limited">TATA Motors</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="gate-actions">
-                <a href="/subscribe" class="btn-gate-buy">
-                    <i class="fas fa-crown"></i> Go Pro
-                </a>
+
+            <!-- View Toggle Bar (hidden until first comparison runs) -->
+            <div class="view-toggle-bar" id="viewToggleBar" style="display:none;">
+                <div class="view-toggle-group">
+                    <button class="view-toggle-btn active" id="btnGraphView" onclick="switchView('graph')">
+                        <i class="fas fa-chart-area"></i> Graph View
+                    </button>
+                    <button class="view-toggle-btn" id="btnTextView" onclick="switchView('text')">
+                        <i class="fas fa-file-lines"></i> Text Report
+                    </button>
+                    <button class="view-toggle-btn" id="btnDownloadReport" onclick="downloadTextReport()">
+                        <i class="fas fa-file-arrow-down"></i> Download Report
+                    </button>
+                </div>
+                <span class="view-toggle-hint" id="viewToggleHint">Switch between charts and text report</span>
             </div>
+
+            <!-- Comparison Results -->
+            <div id="compareResults" style="display:none;">
+
+                <!-- styles moved to <head> -->
+                <div style="display:none"> <!-- placeholder keeps structure intact -->
+                    .view-toggle-btn.locked:hover { background: inherit; }
+                    .pro-badge {
+                        display: inline-block;
+                        margin-left: .35rem;
+                        padding: 1px 6px;
+                        background: linear-gradient(135deg, #f59e0b, #ef4444);
+                        color: #fff;
+                        font-size: .6rem;
+                        font-weight: 700;
+                        border-radius: 4px;
+                        vertical-align: middle;
+                        letter-spacing: .04em;
+                    }
+                    .subscription-gate {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 1rem;
+                        padding: 3.5rem 2rem;
+                        text-align: center;
+                    }
+                    .subscription-gate .gate-icon {
+                        font-size: 3.5rem;
+                        background: linear-gradient(135deg, #f59e0b, #ef4444);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                    }
+                    .subscription-gate h3 {
+                        font-size: 1.4rem;
+                        font-weight: 700;
+                        color: var(--text-primary);
+                    }
+                    .subscription-gate p {
+                        max-width: 420px;
+                        color: var(--text-secondary);
+                        line-height: 1.6;
+                    }
+                    .subscription-gate .gate-features {
+                        list-style: none;
+                        padding: 0;
+                        margin: .5rem 0;
+                        display: flex;
+                        flex-direction: column;
+                        gap: .4rem;
+                        color: var(--text-secondary);
+                        font-size: .9rem;
+                    }
+                    .subscription-gate .gate-features li::before { content: "✓  "; color: #10b981; font-weight: 700; }
+                    .subscription-gate .gate-note {
+                        font-size: .8rem;
+                        opacity: .55;
+                        margin-top: .25rem;
+                    }
+                    .gate-actions {
+                        display: flex;
+                        gap: .75rem;
+                        flex-wrap: wrap;
+                        justify-content: center;
+                        margin-top: .5rem;
+                    }
+                    .btn-subscribe {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: .5rem;
+                        padding: .65rem 1.5rem;
+                        background: linear-gradient(135deg, #f59e0b, #ef4444);
+                        color: #fff;
+                        font-weight: 700;
+                        font-size: .9rem;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        transition: opacity .2s, transform .15s;
+                        box-shadow: 0 4px 18px rgba(245,158,11,.35);
+                    }
+                    .btn-subscribe:hover { opacity: .88; transform: translateY(-1px); }
+                    .btn-back-graph {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: .5rem;
+                        padding: .65rem 1.25rem;
+                        background: rgba(148,163,184,.12);
+                        color: var(--text-secondary);
+                        font-weight: 600;
+                        font-size: .9rem;
+                        border: 1px solid rgba(148,163,184,.2);
+                        border-radius: 8px;
+                    }
+                </div>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
+    </div>
 
-        <!-- Compare Controls -->
-        <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-            <!-- Tag input row -->
-            <div class="compare-input-row">
-                <div class="control-group" style="flex:1;">
-                    <label>Symbols <span style="opacity:.6;font-weight:400;">(click Quick Add chips below, or type &amp; press Enter)</span></label>
-                    <!-- Selected tag pills shown here -->
-                    <div class="tag-list" id="tagList" style="display:flex;flex-wrap:wrap;gap:.35rem;min-height:28px;margin-bottom:.4rem;"></div>
-                    <div style="font-size:.75rem;margin-bottom:.4rem;" id="tagCounter">No stocks selected — click chips below or type above</div>
-                    <div class="tag-input-wrapper" id="tagInputWrapper">
-                        <input type="text" id="tagTyping" class="tag-typing" placeholder="e.g. AAPL,MSFT,GOOGL — press Enter" autocomplete="off" spellcheck="false" style="width:100%;">
-                    </div>
-                    <!-- hidden, kept in sync for runComparison() -->
-                    <input type="hidden" id="compareSymbols">
-                </div>
-                <div class="control-group">
-                    <label>Period</label>
-                    <select id="comparePeriod" class="form-input">
-                        <option value="1mo">1 Month</option>
-                        <option value="3mo">3 Months</option>
-                        <option value="6mo">6 Months</option>
-                        <option value="1y" selected>1 Year</option>
-                        <option value="2y">2 Years</option>
-                        <option value="5y">5 Years</option>
-                    </select>
-                </div>
-                <button class="btn-primary" id="compareBtn">
-                    <i class="fas fa-balance-scale"></i> Compare
-                </button>
-            </div>
-
-            <!-- Suggestions Panel -->
-            <div class="suggestions-panel">
-                <div class="suggestions-title"><i class="fas fa-lightbulb"></i> Quick Add</div>
-                <div class="suggestion-groups">
-                    <div class="suggestion-group">
-                        <span class="sg-label">Tech</span>
-                        <button class="sug-chip" data-sym="AAPL" title="Apple Inc.">AAPL</button>
-                        <button class="sug-chip" data-sym="MSFT" title="Microsoft Corporation">MSFT</button>
-                        <button class="sug-chip" data-sym="GOOGL" title="Alphabet Inc. (Google)">GOOGL</button>
-                        <button class="sug-chip" data-sym="AMZN" title="Amazon.com Inc.">AMZN</button>
-                        <button class="sug-chip" data-sym="NVDA" title="NVIDIA Corporation">NVDA</button>
-                        <button class="sug-chip" data-sym="META" title="Meta Platforms Inc. (Facebook)">META</button>
-                        <button class="sug-chip" data-sym="TSLA" title="Tesla Inc.">TSLA</button>
-                        <button class="sug-chip" data-sym="AMD" title="Advanced Micro Devices Inc.">AMD</button>
-                        <button class="sug-chip" data-sym="INTC" title="Intel Corporation">INTC</button>
-                        <button class="sug-chip" data-sym="ORCL" title="Oracle Corporation">ORCL</button>
-                    </div>
-                    <div class="suggestion-group">
-                        <span class="sg-label">Finance</span>
-                        <button class="sug-chip" data-sym="JPM" title="JPMorgan Chase & Co.">JPM</button>
-                        <button class="sug-chip" data-sym="GS" title="Goldman Sachs Group Inc.">GS</button>
-                        <button class="sug-chip" data-sym="BAC" title="Bank of America Corporation">BAC</button>
-                        <button class="sug-chip" data-sym="V" title="Visa Inc.">V</button>
-                        <button class="sug-chip" data-sym="MA" title="Mastercard Incorporated">MA</button>
-                        <button class="sug-chip" data-sym="WFC" title="Wells Fargo & Company">WFC</button>
-                    </div>
-                    <div class="suggestion-group">
-                        <span class="sg-label">Healthcare</span>
-                        <button class="sug-chip" data-sym="JNJ" title="Johnson & Johnson">JNJ</button>
-                        <button class="sug-chip" data-sym="PFE" title="Pfizer Inc.">PFE</button>
-                        <button class="sug-chip" data-sym="UNH" title="UnitedHealth Group Inc.">UNH</button>
-                        <button class="sug-chip" data-sym="ABBV" title="AbbVie Inc.">ABBV</button>
-                        <button class="sug-chip" data-sym="MRK" title="Merck & Co. Inc.">MRK</button>
-                    </div>
-                    <div class="suggestion-group">
-                        <span class="sg-label">Energy</span>
-                        <button class="sug-chip" data-sym="XOM" title="Exxon Mobil Corporation">XOM</button>
-                        <button class="sug-chip" data-sym="CVX" title="Chevron Corporation">CVX</button>
-                        <button class="sug-chip" data-sym="COP" title="ConocoPhillips">COP</button>
-                    </div>
-                    <div class="suggestion-group">
-                        <span class="sg-label">India (NSE)</span>
-                        <button class="sug-chip" data-sym="RELIANCE.NS" title="Reliance Industries Limited">RELIANCE</button>
-                        <button class="sug-chip" data-sym="TCS.NS" title="Tata Consultancy Services">TCS</button>
-                        <button class="sug-chip" data-sym="INFY.NS" title="Infosys Limited">INFY</button>
-                        <button class="sug-chip" data-sym="HDFCBANK.NS" title="HDFC Bank Limited">HDFC Bank</button>
-                        <button class="sug-chip" data-sym="WIPRO.NS" title="Wipro Limited">WIPRO</button>
-                        <button class="sug-chip" data-sym="TATAMOTORS.NS" title="Tata Motors Limited">TATA Motors</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- View Toggle Bar (hidden until first comparison runs) -->
-        <div class="view-toggle-bar" id="viewToggleBar" style="display:none;">
-            <div class="view-toggle-group">
-                <button class="view-toggle-btn active" id="btnGraphView" onclick="switchView('graph')">
-                    <i class="fas fa-chart-area"></i> Graph View
-                </button>
-                <button class="view-toggle-btn" id="btnTextView" onclick="switchView('text')">
-                    <i class="fas fa-file-lines"></i> Text Report
-                </button>
-                <button class="view-toggle-btn" id="btnDownloadReport" onclick="downloadTextReport()">
-                    <i class="fas fa-file-arrow-down"></i> Download Report
-                </button>
-            </div>
-            <span class="view-toggle-hint" id="viewToggleHint">Switch between charts and text report</span>
-        </div>
-
-        <!-- Comparison Results -->
-        <div id="compareResults" style="display:none;">
-
-            <!-- styles moved to <head> -->
-            <div style="display:none"> <!-- placeholder keeps structure intact -->
-                .view-toggle-btn.locked:hover { background: inherit; }
-                .pro-badge {
-                    display: inline-block;
-                    margin-left: .35rem;
-                    padding: 1px 6px;
-                    background: linear-gradient(135deg, #f59e0b, #ef4444);
-                    color: #fff;
-                    font-size: .6rem;
-                    font-weight: 700;
-                    border-radius: 4px;
-                    vertical-align: middle;
-                    letter-spacing: .04em;
-                }
-                .subscription-gate {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 1rem;
-                    padding: 3.5rem 2rem;
-                    text-align: center;
-                }
-                .subscription-gate .gate-icon {
-                    font-size: 3.5rem;
-                    background: linear-gradient(135deg, #f59e0b, #ef4444);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                }
-                .subscription-gate h3 {
-                    font-size: 1.4rem;
-                    font-weight: 700;
-                    color: var(--text-primary);
-                }
-                .subscription-gate p {
-                    max-width: 420px;
-                    color: var(--text-secondary);
-                    line-height: 1.6;
-                }
-                .subscription-gate .gate-features {
-                    list-style: none;
-                    padding: 0;
-                    margin: .5rem 0;
-                    display: flex;
-                    flex-direction: column;
-                    gap: .4rem;
-                    color: var(--text-secondary);
-                    font-size: .9rem;
-                }
-                .subscription-gate .gate-features li::before { content: "✓  "; color: #10b981; font-weight: 700; }
-                .subscription-gate .gate-note {
-                    font-size: .8rem;
-                    opacity: .55;
-                    margin-top: .25rem;
-                }
-                .gate-actions {
-                    display: flex;
-                    gap: .75rem;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    margin-top: .5rem;
-                }
-                .btn-subscribe {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: .5rem;
-                    padding: .65rem 1.5rem;
-                    background: linear-gradient(135deg, #f59e0b, #ef4444);
-                    color: #fff;
-                    font-weight: 700;
-                    font-size: .9rem;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    transition: opacity .2s, transform .15s;
-                    box-shadow: 0 4px 18px rgba(245,158,11,.35);
-                }
-                .btn-subscribe:hover { opacity: .88; transform: translateY(-1px); }
-                .btn-back-graph {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: .5rem;
-                    padding: .65rem 1.25rem;
-                    background: rgba(148,163,184,.12);
-                    color: var(--text-secondary);
-                    font-weight: 600;
-                    font-size: .9rem;
-                    border: 1px solid rgba(148,163,184,.2);
-                    border-radius: 8px;
-                    cursor: pointer;
-                    transition: background .2s;
-                }
-                .btn-back-graph:hover { background: rgba(148,163,184,.22); }
-                /* Subscribe modal */
-                .subscribe-modal-overlay {
-                    position: fixed;
-                    inset: 0;
-                    background: rgba(0,0,0,.65);
-                    backdrop-filter: blur(4px);
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 1rem;
-                }
-                .subscribe-modal {
-                    position: relative;
-                    background: var(--bg-card, #1a1f2e);
-                    border: 1px solid rgba(245,158,11,.25);
-                    border-radius: 16px;
-                    padding: 2.5rem 2rem 2rem;
-                    max-width: 420px;
-                    width: 100%;
-                    text-align: center;
-                    box-shadow: 0 24px 64px rgba(0,0,0,.6);
-                    display: flex;
-                    flex-direction: column;
-                    gap: .9rem;
-                }
-                .modal-close {
-                    position: absolute;
-                    top: .75rem; right: 1rem;
-                    background: none;
-                    border: none;
-                    color: var(--text-secondary);
-                    font-size: 1.4rem;
-                    cursor: pointer;
-                    line-height: 1;
-                }
-                .modal-close:hover { color: var(--text-primary); }
-                .modal-icon {
-                    font-size: 2.5rem;
-                    background: linear-gradient(135deg, #f59e0b, #ef4444);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                }
-                .subscribe-modal h3 { font-size: 1.2rem; font-weight: 700; }
-                .subscribe-modal p { color: var(--text-secondary); font-size: .9rem; line-height: 1.6; }
-                .modal-contact-box {
-                    background: rgba(148,163,184,.08);
-                    border: 1px solid rgba(148,163,184,.15);
-                    border-radius: 10px;
-                    padding: .9rem 1.2rem;
-                    display: flex;
-                    flex-direction: column;
-                    gap: .55rem;
-                    text-align: left;
-                }
-                .modal-contact-row {
-                    display: flex;
-                    align-items: center;
-                    gap: .6rem;
-                    font-size: .88rem;
-                    color: var(--text-primary);
-                }
-                .modal-contact-row i { color: #f59e0b; width: 16px; text-align: center; }
-            </div> <!-- end placeholder -->
-
-            <!-- ── GRAPH VIEW ── -->
-            <div id="graphView">
-                <!-- Chart Type -->
-                <div style="margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;">
-                    <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;">Chart Type:</label>
-                    <select id="compareChartType" class="form-input" style="min-width:160px;" onchange="switchCompareChartType(this.value)">
-                        <option value="line" selected>📈  Line Chart</option>
-                        <option value="area">🌊  Area Chart</option>
-                        <option value="bar">📊  Bar Chart</option>
-                    </select>
-                </div>
-
-                <!-- Summary Cards -->
-                <div class="compare-summary" id="compareSummary"></div>
-
-                <!-- Normalized Performance Chart -->
-                <div class="glass-card chart-full" style="margin-bottom: 1.5rem;">
-                    <div class="card-header">
-                        <h3><i class="fas fa-chart-line"></i> Normalized Performance (%)</h3>
-                    </div>
-                    <div class="chart-container large-chart">
-                        <canvas id="compareChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Absolute Price Chart -->
-                <div class="glass-card chart-full" style="margin-bottom: 1.5rem;">
-                    <div class="card-header">
-                        <h3><i class="fas fa-dollar-sign"></i> Absolute Prices</h3>
-                    </div>
-                    <div class="chart-container large-chart">
-                        <canvas id="absoluteChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Comparison Table -->
-                <div class="glass-card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-table"></i> Detailed Comparison</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table" id="compareTable">
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Start Price</th>
-                                    <th>End Price</th>
-                                    <th>Total Return</th>
-                                    <th>Max Price</th>
-                                    <th>Min Price</th>
-                                    <th>Volatility</th>
-                                    <th>Avg Volume</th>
-                                </tr>
-                            </thead>
-                            <tbody id="compareBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── TEXT VIEW ── -->
-            <div id="textView" style="display:none;">
-                <div class="glass-card" id="textReportCard"></div>
-            </div>
-
-        </div><!-- end compareResults -->
-
-        {% endif %}<!-- end subscriber gate -->
-    </main>
-
-    <div class="toast-container" id="toastContainer"></div>
-    <script src="/static/js/app.js"></script>
-    {% if is_subscribed %}
+    <script src="/static/js/header.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version }}"></script>
     <script src="/static/js/compare.js"></script>
-    {% else %}
-    <script>document.addEventListener('DOMContentLoaded', () => { initCommon(); });</script>
-    {% endif %}
 </body>
 </html>

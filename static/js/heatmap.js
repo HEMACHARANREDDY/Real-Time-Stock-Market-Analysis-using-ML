@@ -38,7 +38,8 @@
         return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
     }
     function fmt(n) {
-        return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (typeof window.formatPrice === 'function') return window.formatPrice(Number(n));
+        return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function toast(msg, type) {
         if (typeof window.showToast === 'function') { window.showToast(msg, type); return; }
@@ -133,7 +134,7 @@
                     <tr style="text-align:left;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border-color);">
                         <th style="padding:0.6rem 0.75rem;">Symbol</th>
                         <th style="padding:0.6rem 0.75rem;">Company</th>
-                        <th style="padding:0.6rem 0.75rem;text-align:right;">Price (₹)</th>
+                        <th style="padding:0.6rem 0.75rem;text-align:right;">Price</th>
                         <th style="padding:0.6rem 0.75rem;text-align:right;">Change</th>
                     </tr>
                 </thead>

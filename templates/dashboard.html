@@ -39,6 +39,7 @@
     </script>
     <script>(function(){document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');})();</script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/header.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -48,119 +49,81 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 </head>
 <body>
-    <!-- Sidebar Navigation -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <a href="/dashboard" style="text-decoration:none;">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="26" height="26" fill="none"><path d="M3,32 C7,32 9,26 14,22 C20,17 16,10 23,7 C27,5 31,5 33,6" stroke="white" stroke-width="2.5" stroke-linecap="round"/><polyline points="7,22 10,22 12.5,16 15,28 17.5,16 20,22 23,22" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/></svg>
+    {% include 'shared/header.html' %}
+    <div class="main-content-wrapper">
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <div>
+                        <h2 class="page-title">Market Dashboard</h2>
+                        <span class="page-subtitle" id="currentDate"></span>
+                    </div>
                 </div>
-                <div class="logo-text">
-                    <h1>S Pulse</h1>
-                    <span class="logo-badge">AI</span>
+                <div class="topbar-right">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
+                        <kbd>Enter</kbd>
+                    </div>
+                    <div class="topbar-actions">
+                        <button class="btn-icon" id="refreshBtn" title="Refresh Data">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn-icon" id="themeToggle" title="Toggle Theme">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-            </a>
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
 
-        <div class="sidebar-search">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="stockSearch" placeholder="Search stock (e.g., AAPL)" autocomplete="off">
-                <kbd>Enter</kbd>
-            </div>
-        </div>
-
-        <ul class="nav-menu">
-            <li class="nav-item active">
-                <a href="/dashboard" class="nav-link">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/analysis" class="nav-link">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Technical Analysis</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/predictions" class="nav-link">
-                    <i class="fas fa-brain"></i>
-                    <span>ML Predictions</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/market-predictions" class="nav-link">
-                    <i class="fas fa-globe"></i>
-                    <span>Market Predictions</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/compare" class="nav-link">
-                    <i class="fas fa-balance-scale"></i>
-                    <span>Compare Stocks</span>
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <div class="user-avatar" id="userAvatar" style="{% if is_subscribed %}background:linear-gradient(135deg,#10b981,#06b6d4);{% endif %}">{{ current_user[0]|upper }}</div>
-                <div class="user-details">
-                    <div class="user-name" id="sidebarUsername">{{ current_user|capitalize }} {% if is_subscribed %}<span class="sidebar-pro-badge">PRO</span>{% endif %}</div>
-                    <div class="user-role">{% if is_subscribed %}Premium Member{% else %}Analyst{% endif %}</div>
+            <div class="page-hero-strip trading">
+                <div class="page-hero-content">
+                    <div class="page-hero-title">Real-Time Market Intelligence</div>
+                    <div class="page-hero-subtitle">Track live trends, compare momentum, and make faster decisions with a bold, data-first dashboard.</div>
                 </div>
             </div>
-            <div class="market-status" id="marketStatus">
-                <div class="status-dot"></div>
-                <span>Market Data Live</span>
-            </div>
-            <a href="/logout" class="btn-logout">
-                <i class="fas fa-right-from-bracket"></i> Sign Out
-            </a>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Top Bar -->
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div>
-                    <h2 class="page-title">Market Dashboard</h2>
-                    <span class="page-subtitle" id="currentDate"></span>
-                </div>
-            </div>
-            <div class="topbar-right">
-                {% if not is_subscribed %}
-                <a href="/subscribe" class="btn-subscribe-topbar">
-                    <i class="fas fa-crown"></i> Go Pro
-                </a>
-                {% endif %}
-                <div class="topbar-actions">
-                    <button class="btn-icon" id="refreshBtn" title="Refresh Data">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <button class="btn-icon" id="themeToggle" title="Toggle Theme">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
 
         <!-- Market Indices Ticker -->
         <div class="indices-ticker" id="indicesTicker">
             <div class="ticker-track">
                 <div class="ticker-content" id="tickerContent">
                     <div class="ticker-item loading-pulse">Loading market data...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chart Section -->
+        <div class="content-grid dashboard-grid">
+            <div class="chart-section glass-card">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <h3 id="chartTitle">AAPL - Apple Inc.</h3>
+                        <div class="period-selector">
+                            <button class="period-btn" data-period="5d">5D</button>
+                            <button class="period-btn active" data-period="1mo">1M</button>
+                            <button class="period-btn" data-period="3mo">3M</button>
+                            <button class="period-btn" data-period="6mo">6M</button>
+                            <button class="period-btn" data-period="1y">1Y</button>
+                            <button class="period-btn" data-period="2y">2Y</button>
+                            <button class="period-btn" data-period="5y">5Y</button>
+                        </div>
+                    </div>
+                    <div class="chart-type-selector">
+                        <select id="dashChartType" class="form-input" style="min-width:160px;padding:0.45rem 0.8rem;font-size:0.9rem;font-weight:700;" onchange="switchDashChartType(this.value)">
+                            <option value="line" selected>📈  Line Chart</option>
+                            <option value="area">🌊  Area Chart</option>
+                            <option value="candlestick">📊  Candlestick</option>
+                            <option value="bar">📊  Bar Chart</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="mainChart"></canvas>
+                    <div class="chart-overlay" id="chartLoading">
+                        <div class="spinner"></div>
+                        <span>Loading chart data...</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -212,121 +175,88 @@
 
         <!-- GRAPH VIEW -->
         <div id="dashGraphView">
-        <!-- Main Chart Section -->
-        <div class="content-grid dashboard-grid">
-            <div class="chart-section glass-card">
-                <div class="card-header">
-                    <div class="card-title-group">
-                        <h3 id="chartTitle">AAPL - Apple Inc.</h3>
-                        <div class="period-selector">
-                            <button class="period-btn" data-period="5d">5D</button>
-                            <button class="period-btn" data-period="1mo" data-active="true">1M</button>
-                            <button class="period-btn" data-period="3mo">3M</button>
-                            <button class="period-btn" data-period="6mo">6M</button>
-                            <button class="period-btn" data-period="1y">1Y</button>
-                            <button class="period-btn" data-period="2y">2Y</button>
-                            <button class="period-btn" data-period="5y">5Y</button>
-                        </div>
-                    </div>
-                    <div class="chart-type-selector">
-                        <select id="dashChartType" class="form-input" style="min-width:150px;padding:0.4rem 0.75rem;font-size:0.82rem;" onchange="switchDashChartType(this.value)">
-                            <option value="line" selected>📈  Line Chart</option>
-                            <option value="area">🌊  Area Chart</option>
-                            <option value="candlestick">📊  Candlestick</option>
-                            <option value="bar">📊  Bar Chart</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="mainChart"></canvas>
-                    <div class="chart-overlay" id="chartLoading">
-                        <div class="spinner"></div>
-                        <span>Loading chart data...</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Volume Chart -->
-            <div class="volume-section glass-card">
-                <div class="card-header">
-                    <h3>Volume</h3>
-                </div>
-                <div class="chart-container small-chart">
-                    <canvas id="volumeChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Trending Stocks & Stock Details -->
-        <div class="content-grid info-grid">
-            <!-- Trending Stocks -->
-            <div class="glass-card trending-section">
-                <div class="card-header">
-                    <h3><i class="fas fa-fire"></i> Trending Stocks</h3>
-                    <button class="btn-text" id="refreshTrending">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
-                <div class="trending-list" id="trendingList">
-                    <div class="loading-skeleton">
-                        <div class="skeleton-row"></div>
-                        <div class="skeleton-row"></div>
-                        <div class="skeleton-row"></div>
+            <div class="content-grid">
+                <div class="volume-section glass-card">
+                    <div class="card-header">
+                        <h3>Volume</h3>
+                    </div>
+                    <div class="chart-container small-chart" style="height: 150px;">
+                        <canvas id="volumeChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Stock Details -->
-            <div class="glass-card details-section">
-                <div class="card-header">
-                    <h3><i class="fas fa-info-circle"></i> Stock Details</h3>
-                </div>
-                <div class="stock-details" id="stockDetails">
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <span class="detail-label">Sector</span>
-                            <span class="detail-value" id="detSector">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Industry</span>
-                            <span class="detail-value" id="detIndustry">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">P/E Ratio</span>
-                            <span class="detail-value" id="detPE">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">EPS</span>
-                            <span class="detail-value" id="detEPS">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">52W High</span>
-                            <span class="detail-value" id="det52H">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">52W Low</span>
-                            <span class="detail-value" id="det52L">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Beta</span>
-                            <span class="detail-value" id="detBeta">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Avg Volume</span>
-                            <span class="detail-value" id="detAvgVol">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Dividend Yield</span>
-                            <span class="detail-value" id="detDivYield">--</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Currency</span>
-                            <span class="detail-value" id="detCurrency">--</span>
+            <!-- Trending Stocks & Stock Details -->
+            <div class="content-grid info-grid">
+                <!-- Trending Stocks -->
+                <div class="glass-card trending-section">
+                    <div class="card-header">
+                        <h3><i class="fas fa-fire"></i> Trending Stocks</h3>
+                        <button class="btn-text" id="refreshTrending">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="trending-list" id="trendingList">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-row"></div>
+                            <div class="skeleton-row"></div>
+                            <div class="skeleton-row"></div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div><!-- /info-grid row -->
+
+                <!-- Stock Details -->
+                <div class="glass-card details-section">
+                    <div class="card-header">
+                        <h3><i class="fas fa-info-circle"></i> Stock Details</h3>
+                    </div>
+                    <div class="stock-details" id="stockDetails">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Sector</span>
+                                <span class="detail-value" id="detSector">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Industry</span>
+                                <span class="detail-value" id="detIndustry">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">P/E Ratio</span>
+                                <span class="detail-value" id="detPE">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">EPS</span>
+                                <span class="detail-value" id="detEPS">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">52W High</span>
+                                <span class="detail-value" id="det52H">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">52W Low</span>
+                                <span class="detail-value" id="det52L">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Beta</span>
+                                <span class="detail-value" id="detBeta">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Avg Volume</span>
+                                <span class="detail-value" id="detAvgVol">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Dividend Yield</span>
+                                <span class="detail-value" id="detDivYield">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Currency</span>
+                                <span class="detail-value" id="detCurrency">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /info-grid row -->
         </div><!-- /dashGraphView -->
 
         <!-- TEXT VIEW -->
@@ -334,11 +264,13 @@
             <div class="glass-card" id="dashTextReport"></div>
         </div>
     </main>
+    </div>
 
     <!-- Toast Notification -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/header.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             initDashboard();

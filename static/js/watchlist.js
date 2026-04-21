@@ -25,8 +25,9 @@
 
     /* ── helpers ──────────────────────────────────── */
     function fmt(n) {
-        if (n === undefined || n === null || isNaN(n)) return '₹0';
-        return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (n === undefined || n === null || isNaN(n)) return '--';
+        if (typeof window.formatPrice === 'function') return window.formatPrice(Number(n));
+        return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function fmtPct(n) {
         if (n === undefined || n === null || isNaN(n)) return '0.00%';
@@ -280,7 +281,7 @@
         });
 
         document.getElementById('statInvested').textContent = fmt(totalInvested);
-        document.getElementById('statCurrentVal').textContent = totalCurrent ? fmt(totalCurrent) : '₹0';
+        document.getElementById('statCurrentVal').textContent = totalCurrent ? fmt(totalCurrent) : '--';
 
         const totalPL = totalCurrent - totalInvested;
         const $plVal = document.getElementById('statPL');
